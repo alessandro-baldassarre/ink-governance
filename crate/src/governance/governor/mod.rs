@@ -1,0 +1,613 @@
+pub use crate::{
+    governor,
+    traits::governor::*,
+};
+pub use governor::Internal as _;
+
+use ink::{
+    env::{
+        call::{
+            build_call,
+            Call,
+            ExecutionInput,
+        },
+        hash::Blake2x256,
+        CallFlags,
+        DefaultEnvironment,
+        Gas,
+    },
+    prelude::collections::vec_deque::VecDeque,
+    storage::traits::StorageLayout,
+};
+use openbrush::{
+    storage::Mapping,
+    traits::{
+        AccountId,
+        BlockNumber,
+        Hash,
+        Storage,
+        String,
+    },
+};
+
+/// A ProposalCore describe internal parameters for a proposal
+#[derive(Debug, Clone, PartialEq, scale::Encode, scale::Decode, StorageLayout)]
+#[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+pub struct ProposalCore {
+    /// The block number when voting for a proposal start
+    pub vote_start: BlockNumber,
+    /// The block number when voting for a proposal end
+    pub vote_end: BlockNumber,
+    /// A boolean value that describe if the proposal is been executed
+    pub executed: bool,
+    /// A boolean value that describe if the proposal is been canceled
+    pub canceled: bool,
+}
+
+pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
+
+#[derive(Default, Debug)]
+#[openbrush::upgradeable_storage(STORAGE_KEY)]
+pub struct Data {
+    pub proposals: Mapping<ProposalId, ProposalCore>,
+    pub governance_call: VecDeque<[u8; 4]>,
+    pub _reserved: Option<()>,
+}
+
+impl<T: Storage<Data>> Governor for T {
+    default fn hash_proposal(&self, proposal: Proposal, description_hash: Hash) -> ProposalId {
+        self._hash_proposal(&proposal, &description_hash)
+    }
+
+    default fn state(&self, proposal_id: ProposalId) -> Result<ProposalState, GovernorError> {
+        let proposal = self
+            .data::<Data>()
+            .proposals
+            .get(&proposal_id)
+            .ok_or(GovernorError::ProposalNotFound)?;
+        if proposal.executed {
+            return Ok(ProposalState::Executed)
+        }
+        if proposal.canceled {
+            return Ok(ProposalState::Canceled)
+        }
+
+        let snapshot = self.proposal_snapshot(proposal_id)?;
+
+        if snapshot == 0 {
+            return Err(GovernorError::ProposalNotFound)
+        }
+
+        if snapshot >= Self::env().block_number() {
+            return Ok(ProposalState::Pending)
+        }
+
+        let deadline = self.proposal_deadline(proposal_id)?;
+
+        if deadline >= Self::env().block_number() {
+            return Ok(ProposalState::Active)
+        }
+
+        if self._quorum_reached(&proposal_id) && self._vote_succeeded(&proposal_id) {
+            Ok(ProposalState::Succeeded)
+        } else {
+            Ok(ProposalState::Defeated)
+        }
+    }
+
+    default fn proposal_snapshot(
+        &self,
+        proposal_id: ProposalId,
+    ) -> Result<BlockNumber, GovernorError> {
+        let vote_start = self
+            .data::<Data>()
+            .proposals
+            .get(&proposal_id)
+            .ok_or(GovernorError::ProposalNotFound)?
+            .vote_start;
+        Ok(vote_start)
+    }
+
+    default fn proposal_deadline(
+        &self,
+        proposal_id: ProposalId,
+    ) -> Result<BlockNumber, GovernorError> {
+        let vote_end = self
+            .data::<Data>()
+            .proposals
+            .get(&proposal_id)
+            .ok_or(GovernorError::ProposalNotFound)?
+            .vote_end;
+        Ok(vote_end)
+    }
+
+    default fn proposal_threshold(&self) -> u64 {
+        0
+    }
+
+    default fn voting_delay(&self) -> u32 {
+        0
+    }
+
+    default fn voting_period(&self) -> u32 {
+        0
+    }
+
+    default fn quorum(&self, _block_number: BlockNumber) -> u64 {
+        0
+    }
+
+    default fn has_voted(&self, _proposal_id: ProposalId, _account: AccountId) -> bool {
+        false
+    }
+
+    default fn propose(
+        &mut self,
+        proposal: Proposal,
+        description: String,
+    ) -> Result<ProposalId, GovernorError> {
+        if self.get_votes(Self::env().caller(), Self::env().block_number() - 1)?
+            >= self.proposal_threshold()
+        {
+            return Err(GovernorError::BelowThreshold)
+        }
+
+        let description_hash =
+            Hash::try_from(Self::env().hash_bytes::<Blake2x256>(&description).as_ref()).unwrap();
+        let proposal_id = self._hash_proposal(&proposal, &description_hash);
+
+        if proposal.selector.is_empty() {
+            return Err(GovernorError::EmptyProposal)
+        }
+
+        if !self.data::<Data>().proposals.get(&proposal_id).is_none() {
+            return Err(GovernorError::ProposalAlreadyExist)
+        }
+
+        let vote_start = Self::env().block_number() + self.voting_delay();
+        let vote_end = vote_start + self.voting_period();
+
+        let proposal_core = ProposalCore {
+            vote_start,
+            vote_end,
+            executed: false,
+            canceled: false,
+        };
+
+        self.data::<Data>()
+            .proposals
+            .insert(&proposal_id, &proposal_core);
+
+        self._emit_proposal_created(
+            Self::env().caller(),
+            proposal_id,
+            proposal,
+            vote_start,
+            vote_end,
+            description,
+        );
+
+        Ok(proposal_id)
+    }
+
+    default fn execute(
+        &mut self,
+        proposal: Proposal,
+        description_hash: Hash,
+    ) -> Result<ProposalId, GovernorError> {
+        let proposal_id = self._hash_proposal(&proposal, &description_hash);
+        let status = self.state(proposal_id)?;
+
+        match status {
+            ProposalState::Succeeded | ProposalState::Queued => {}
+            _ => return Err(GovernorError::ProposalNotSuccessful),
+        }
+
+        let mut proposal_core = self
+            .data::<Data>()
+            .proposals
+            .get(&proposal_id)
+            .ok_or(GovernorError::ProposalNotFound)?;
+
+        self._before_execute(&proposal)?;
+        self._execute(&proposal_id, &proposal)?;
+
+        proposal_core.executed = true;
+
+        self.data::<Data>()
+            .proposals
+            .insert(&proposal_id, &proposal_core);
+
+        self._after_execute()?;
+
+        Ok(proposal_id)
+    }
+
+    default fn get_votes(
+        &self,
+        account: AccountId,
+        block_number: BlockNumber,
+    ) -> Result<u64, GovernorError> {
+        let votes = self._get_votes(&account, &block_number, &self._default_params())?;
+
+        Ok(votes)
+    }
+
+    default fn get_votes_with_params(
+        &self,
+        account: AccountId,
+        block_number: BlockNumber,
+        params: Vec<u8>,
+    ) -> Result<u64, GovernorError> {
+        let votes = self._get_votes(&account, &block_number, &params)?;
+
+        Ok(votes)
+    }
+
+    default fn cast_vote(
+        &self,
+        proposal_id: ProposalId,
+        support: u8,
+    ) -> Result<u64, GovernorError> {
+        let voter = Self::env().caller();
+        let votes = self._cast_vote(&proposal_id, &voter, support, &String::from(""))?;
+        Ok(votes)
+    }
+
+    default fn cast_vote_with_reason(
+        &self,
+        proposal_id: ProposalId,
+        support: u8,
+        reason: String,
+    ) -> Result<u64, GovernorError> {
+        let voter = Self::env().caller();
+        let votes = self._cast_vote(&proposal_id, &voter, support, &reason)?;
+        Ok(votes)
+    }
+
+    default fn cast_vote_with_reason_and_params(
+        &self,
+        proposal_id: ProposalId,
+        support: u8,
+        reason: String,
+        params: Vec<u8>,
+    ) -> Result<u64, GovernorError> {
+        let voter = Self::env().caller();
+        let votes = self._cast_vote_with_params(&proposal_id, &voter, support, &reason, &params)?;
+        Ok(votes)
+    }
+
+    default fn relay(&mut self, proposal: Proposal) -> Result<(), GovernorError> {
+        // Flush the state into storage before the cross call.
+        // Because during cross call we cann call this contract.
+        self.flush();
+        let result = build_call::<DefaultEnvironment>()
+            .call_type(
+                Call::new(proposal.callee)
+                    .gas_limit(Gas::default())
+                    .transferred_value(proposal.transferred_value),
+            )
+            .exec_input(
+                ExecutionInput::new(proposal.selector.into()).push_arg(CallInput(&proposal.input)),
+            )
+            .returns::<()>()
+            .call_flags(CallFlags::default().set_allow_reentry(true))
+            .try_invoke()
+            .map_err(|_| GovernorError::CallRevertedWithoutMessage);
+
+        // Load the state of the contract after the cross call.
+        self.load();
+
+        result?.unwrap();
+        Ok(())
+    }
+
+    default fn counting_mode(&self) -> String {
+        String::from("")
+    }
+}
+
+pub trait Internal {
+    /// User must override those methods in their contract.
+    fn _emit_proposal_created(
+        &self,
+        _proposer: AccountId,
+        _proposal_id: ProposalId,
+        _proposal: Proposal,
+        _start_block: BlockNumber,
+        _end_block: BlockNumber,
+        _description: String,
+    );
+    fn _emit_proposal_canceled(&self, _proposal_id: &ProposalId);
+    fn _emit_proposal_executed(&self, _proposal_id: &ProposalId);
+    fn _emit_vote_cast(
+        &self,
+        _voter: AccountId,
+        _proposal_id: ProposalId,
+        _support: u8,
+        _weight: u64,
+        _reason: String,
+    );
+    fn _emit_vote_cast_with_params(
+        &self,
+        _voter: AccountId,
+        _proposal_id: ProposalId,
+        _support: u8,
+        _weight: u64,
+        _reason: String,
+        _params: Vec<u8>,
+    );
+
+    fn _hash_proposal(&self, proposal: &Proposal, description_hash: &Hash) -> ProposalId;
+
+    /// If amount of votes already cast passes the threshold limit.
+    fn _quorum_reached(&self, proposal_id: &ProposalId) -> bool;
+
+    /// If the proposal is successful or not.
+    fn _vote_succeeded(&self, proposal_id: &ProposalId) -> bool;
+
+    /// Get the voting weight of account at a specific blockNumber, for a vote as described by params.
+    fn _get_votes(
+        &self,
+        account: &AccountId,
+        block_number: &BlockNumber,
+        params: &Vec<u8>,
+    ) -> Result<u64, GovernorError>;
+
+    /// Register a vote for proposalId by account with a given support, voting weight and voting params.
+    ///
+    /// Note: Support is generic and can represent various things depending on the voting system used.
+    fn _count_vote(
+        &self,
+        proposal_id: &ProposalId,
+        account: &AccountId,
+        support: u8,
+        weight: &u64,
+        params: &Vec<u8>,
+    ) -> u64;
+
+    /// Default additional encoded parameters used by castVote methods that don’t include them
+    ///
+    /// Note: Should be overridden by specific implementations to use an appropriate value, the
+    /// meaning of the additional params, in the context of that implementation
+    fn _default_params(&self) -> Vec<u8>;
+
+    /// Internal execution mechanism. Can be overridden to implement different execution
+    /// mechanism
+    fn _execute(
+        &mut self,
+        proposal_id: &ProposalId,
+        proposal: &Proposal,
+    ) -> Result<(), GovernorError>;
+
+    /// Hook before execution is triggered.
+    fn _before_execute(&mut self, proposal: &Proposal) -> Result<(), GovernorError>;
+
+    /// Hook after execution is triggered.
+    fn _after_execute(&mut self) -> Result<(), GovernorError>;
+
+    /// Internal cancel mechanism: locks up the proposal timer, preventing it from being re-submitted. Marks it as canceled to allow distinguishing it from executed proposals.
+    ///
+    /// Emits a ProposalCanceled event.
+    fn _cancel(
+        &mut self,
+        proposal: &Proposal,
+        description_hash: &Hash,
+    ) -> Result<ProposalId, GovernorError>;
+
+    /// Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve voting weight using Governor.get_votes() and call the _count_vote() inte
+    /// rnal function. Uses the _default_params().
+    ///
+    /// Emits a VoteCast event.
+    fn _cast_vote(
+        &self,
+        proposal_id: &ProposalId,
+        account: &AccountId,
+        support: u8,
+        reason: &String,
+    ) -> Result<u64, GovernorError>;
+
+    /// Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve voting weight using Governor.get_votes() and call the _count_vote() inte
+    /// rnal function.
+    ///
+    /// Emits a VoteCast event.
+    fn _cast_vote_with_params(
+        &self,
+        proposal_id: &ProposalId,
+        account: &AccountId,
+        support: u8,
+        reason: &String,
+        params: &Vec<u8>,
+    ) -> Result<u64, GovernorError>;
+
+    /// Address through which the governor executes action. Will be overloaded by module that execute actions through another contract such as a timelock.
+    fn _executor(&self) -> AccountId;
+}
+
+impl<T: Storage<Data>> Internal for T {
+    default fn _emit_proposal_created(
+        &self,
+        _proposer: AccountId,
+        _proposal_id: ProposalId,
+        _proposal: Proposal,
+        _start_block: BlockNumber,
+        _end_block: BlockNumber,
+        _description: String,
+    ) {
+    }
+    default fn _emit_proposal_canceled(&self, _proposal_id: &ProposalId) {}
+    default fn _emit_proposal_executed(&self, _proposal_id: &ProposalId) {}
+    default fn _emit_vote_cast(
+        &self,
+        _voter: AccountId,
+        _proposal_id: ProposalId,
+        _support: u8,
+        _weight: u64,
+        _reason: String,
+    ) {
+    }
+    default fn _emit_vote_cast_with_params(
+        &self,
+        _voter: AccountId,
+        _proposal_id: ProposalId,
+        _support: u8,
+        _weight: u64,
+        _reason: String,
+        _params: Vec<u8>,
+    ) {
+    }
+
+    default fn _hash_proposal(&self, proposal: &Proposal, description_hash: &Hash) -> ProposalId {
+        let mut hash_data: Vec<u8> = vec![];
+
+        hash_data.append(&mut scale::Encode::encode(&proposal));
+        hash_data.append(&mut scale::Encode::encode(&description_hash));
+
+        Hash::try_from(Self::env().hash_bytes::<Blake2x256>(&hash_data).as_ref()).unwrap()
+    }
+
+    default fn _quorum_reached(&self, _proposal_id: &ProposalId) -> bool {
+        false
+    }
+
+    default fn _vote_succeeded(&self, _proposal_id: &ProposalId) -> bool {
+        false
+    }
+
+    default fn _get_votes(
+        &self,
+        _account: &AccountId,
+        _block_number: &BlockNumber,
+        _params: &Vec<u8>,
+    ) -> Result<u64, GovernorError> {
+        Ok(0)
+    }
+
+    default fn _count_vote(
+        &self,
+        _proposal_id: &ProposalId,
+        _account: &AccountId,
+        _support: u8,
+        _weight: &u64,
+        _params: &Vec<u8>,
+    ) -> u64 {
+        0
+    }
+
+    default fn _default_params(&self) -> Vec<u8> {
+        vec![]
+    }
+
+    default fn _execute(
+        &mut self,
+        proposal_id: &ProposalId,
+        proposal: &Proposal,
+    ) -> Result<(), GovernorError> {
+        // Flush the state into storage before the cross call.
+        // Because during cross call we cann call this contract.
+        self.flush();
+        let result = build_call::<DefaultEnvironment>()
+            .call_type(
+                Call::new(proposal.callee)
+                    .gas_limit(Gas::default())
+                    .transferred_value(proposal.transferred_value),
+            )
+            .exec_input(
+                ExecutionInput::new(proposal.selector.into()).push_arg(CallInput(&proposal.input)),
+            )
+            .returns::<()>()
+            .call_flags(CallFlags::default().set_allow_reentry(true))
+            .try_invoke()
+            .map_err(|_| GovernorError::CallRevertedWithoutMessage);
+
+        // Load the state of the contract after the cross call.
+        self.load();
+        self._emit_proposal_executed(proposal_id);
+
+        result?.unwrap();
+        Ok(())
+    }
+
+    default fn _before_execute(&mut self, proposal: &Proposal) -> Result<(), GovernorError> {
+        if self._executor() != Self::env().caller() {
+            self.data::<Data>()
+                .governance_call
+                .push_back(proposal.selector);
+        }
+        Ok(())
+    }
+
+    default fn _after_execute(&mut self) -> Result<(), GovernorError> {
+        if self._executor() != Self::env().caller() {
+            if !self.data::<Data>().governance_call.is_empty() {
+                self.data::<Data>().governance_call.clear();
+            }
+        }
+        Ok(())
+    }
+
+    default fn _cancel(
+        &mut self,
+        proposal: &Proposal,
+        description_hash: &Hash,
+    ) -> Result<ProposalId, GovernorError> {
+        let proposal_id = self._hash_proposal(proposal, description_hash);
+        let status = self.state(proposal_id)?;
+        let mut proposal_core = self
+            .data::<Data>()
+            .proposals
+            .get(&proposal_id)
+            .ok_or(GovernorError::ProposalNotFound)?;
+
+        match status {
+            ProposalState::Canceled | ProposalState::Expired | ProposalState::Executed => {
+                return Err(GovernorError::ProposalNotActive)
+            }
+            _ => {
+                proposal_core.canceled = true;
+                self.data::<Data>()
+                    .proposals
+                    .insert(&proposal_id, &proposal_core)
+            }
+        }
+
+        self._emit_proposal_canceled(&proposal_id);
+        Ok(proposal_id)
+    }
+
+    default fn _cast_vote(
+        &self,
+        _proposal_id: &ProposalId,
+        _account: &AccountId,
+        _support: u8,
+        _reason: &String,
+    ) -> Result<u64, GovernorError> {
+        Ok(0)
+    }
+
+    default fn _cast_vote_with_params(
+        &self,
+        _proposal_id: &ProposalId,
+        _account: &AccountId,
+        _support: u8,
+        _reason: &String,
+        _params: &Vec<u8>,
+    ) -> Result<u64, GovernorError> {
+        Ok(0)
+    }
+
+    default fn _executor(&self) -> AccountId {
+        Self::env().account_id()
+    }
+}
+
+/// A wrapper that allows us to encode a blob of bytes.
+///
+/// We use this to pass the set of untyped (bytes) parameters to the `CallBuilder`.
+pub struct CallInput<'a>(&'a [u8]);
+
+impl<'a> scale::Encode for CallInput<'a> {
+    fn encode_to<T: scale::Output + ?Sized>(&self, dest: &mut T) {
+        dest.write(self.0);
+    }
+}
