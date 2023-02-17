@@ -1,5 +1,7 @@
+use crate::governor::counter::Internal;
+use crate::governor_votes::Voting;
 pub use crate::{
-    governor::{counter::Internal, governor},
+    governor::{counter, governor, voter},
     traits::governor::modules::counter::*,
 };
 use openbrush::traits::{AccountId, BlockNumber, OccupiedStorage, Storage};
@@ -16,8 +18,8 @@ pub struct Counting {
 
 impl<T> Counter for T
 where
-    T: Storage<governor::Data<Counting>>,
-    T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<Counting>>,
+    T: Storage<governor::Data<Counting, Voting>>,
+    T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<Counting, Voting>>,
 {
     default fn quorum(&self, _block_number: BlockNumber) -> u64 {
         0
@@ -26,8 +28,8 @@ where
 
 impl<T> Internal for T
 where
-    T: Storage<governor::Data<Counting>>,
-    T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<Counting>>,
+    T: Storage<governor::Data<Counting, Voting>>,
+    T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<Counting, Voting>>,
 {
     default fn _quorum_reached(&self, proposal_id: &ProposalId) -> bool {
         false

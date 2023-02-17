@@ -1,4 +1,4 @@
-pub use crate::{governor, governor::counter, traits::governor::*};
+pub use crate::{governor, governor::counter, governor::voter, traits::governor::*};
 pub use governor::governor::Internal as _;
 
 use ink::{
@@ -33,26 +33,34 @@ pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
 
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
-pub struct Data<C = counter::Counting>
+pub struct Data<C = counter::Counting, V = voter::Voting>
 where
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
+    V: Storable
+        + StorableHint<ManualKey<{ STORAGE_KEY }>>
+        + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
 {
     pub proposals: Mapping<ProposalId, ProposalCore>,
     pub governance_call: VecDeque<[u8; 4]>,
     pub counting_module: C,
+    pub voting_module: V,
     pub _reserved: Option<()>,
 }
 
-impl<T, C> Governor for T
+impl<T, C, V> Governor for T
 where
     C: counter::Internal,
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
-    T: Storage<Data<C>>,
-    T: OccupiedStorage<STORAGE_KEY, WithData = Data<C>>,
+    V: voter::Internal,
+    V: Storable
+        + StorableHint<ManualKey<{ STORAGE_KEY }>>
+        + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
+    T: Storage<Data<C, V>>,
+    T: OccupiedStorage<STORAGE_KEY, WithData = Data<C, V>>,
 {
     default fn hash_proposal(&self, proposal: Proposal, description_hash: Hash) -> ProposalId {
         self._hash_proposal(&proposal, &description_hash)
@@ -415,14 +423,18 @@ pub trait Internal {
     fn _executor(&self) -> AccountId;
 }
 
-impl<T, C> Internal for T
+impl<T, C, V> Internal for T
 where
     C: counter::Internal,
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
-    T: Storage<Data<C>>,
-    T: OccupiedStorage<STORAGE_KEY, WithData = Data<C>>,
+    V: voter::Internal,
+    V: Storable
+        + StorableHint<ManualKey<{ STORAGE_KEY }>>
+        + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
+    T: Storage<Data<C, V>>,
+    T: OccupiedStorage<STORAGE_KEY, WithData = Data<C, V>>,
 {
     default fn _emit_proposal_created(
         &self,
@@ -475,11 +487,14 @@ where
 
     default fn _get_votes(
         &self,
-        _account: &AccountId,
-        _block_number: &BlockNumber,
-        _params: &Vec<u8>,
+        account: &AccountId,
+        block_number: &BlockNumber,
+        params: &Vec<u8>,
     ) -> Result<u64, GovernorError> {
-        Ok(0)
+        Ok(self
+            .data()
+            .voting_module
+            ._get_votes(account, block_number, params))
     }
 
     default fn _count_vote(

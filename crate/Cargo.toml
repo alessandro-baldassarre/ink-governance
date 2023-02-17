@@ -15,7 +15,7 @@ crate-type = ["rlib"]
 
 [dependencies]
 ink        = { version = "4.0.0", default-features = false }
-openbrush  = { git = "https://github.com/727-Ventures/openbrush-contracts", default-features = false }
+openbrush  = { git = "https://github.com/727-Ventures/openbrush-contracts", default-features = false, features = ["access_control"] }
 scale      = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.3.1", default-features = false, features = ["derive"], optional = true }
 thiserror-no-std = { version = "2.0.2"}
@@ -30,7 +30,7 @@ std = [
 ]
 
 governor = []
-governor_votes = []
+governor_votes_members = []
 governor_counting_simple = []
 
 test-all = ["governor"]
