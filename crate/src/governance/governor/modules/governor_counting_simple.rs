@@ -1,16 +1,8 @@
 pub use crate::{
-    governor::{
-        counter::Internal,
-        governor,
-    },
+    governor::{counter::Internal, governor},
     traits::governor::modules::counter::*,
 };
-use openbrush::traits::{
-    AccountId,
-    BlockNumber,
-    OccupiedStorage,
-    Storage,
-};
+use openbrush::traits::{AccountId, BlockNumber, OccupiedStorage, Storage};
 
 use ink::prelude::vec::Vec;
 

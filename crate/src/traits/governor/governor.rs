@@ -1,13 +1,6 @@
 pub use crate::traits::errors::GovernorError;
 use ink::prelude::vec::Vec;
-use openbrush::traits::{
-    AccountId,
-    Balance,
-    BlockNumber,
-    Hash,
-    String,
-    ZERO_ADDRESS,
-};
+use openbrush::traits::{AccountId, Balance, BlockNumber, Hash, String, ZERO_ADDRESS};
 
 /// The possible states for a proposal
 #[derive(Debug, Clone, PartialEq, scale::Encode, scale::Decode)]

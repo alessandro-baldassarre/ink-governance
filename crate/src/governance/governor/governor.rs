@@ -1,41 +1,18 @@
-pub use crate::{
-    governor,
-    governor::counter,
-    traits::governor::*,
-};
+pub use crate::{governor, governor::counter, traits::governor::*};
 pub use governor::governor::Internal as _;
 
 use ink::{
     env::{
-        call::{
-            build_call,
-            Call,
-            ExecutionInput,
-        },
+        call::{build_call, Call, ExecutionInput},
         hash::Blake2x256,
-        CallFlags,
-        DefaultEnvironment,
-        Gas,
+        CallFlags, DefaultEnvironment, Gas,
     },
     prelude::collections::vec_deque::VecDeque,
-    storage::traits::{
-        AutoStorableHint,
-        ManualKey,
-        Storable,
-        StorableHint,
-        StorageLayout,
-    },
+    storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint, StorageLayout},
 };
 use openbrush::{
     storage::Mapping,
-    traits::{
-        AccountId,
-        BlockNumber,
-        Hash,
-        OccupiedStorage,
-        Storage,
-        String,
-    },
+    traits::{AccountId, BlockNumber, Hash, OccupiedStorage, Storage, String},
 };
 
 /// A ProposalCore describe internal parameters for a proposal
@@ -88,26 +65,26 @@ where
             .get(&proposal_id)
             .ok_or(GovernorError::ProposalNotFound)?;
         if proposal.executed {
-            return Ok(ProposalState::Executed)
+            return Ok(ProposalState::Executed);
         }
         if proposal.canceled {
-            return Ok(ProposalState::Canceled)
+            return Ok(ProposalState::Canceled);
         }
 
         let snapshot = self.proposal_snapshot(proposal_id)?;
 
         if snapshot == 0 {
-            return Err(GovernorError::ProposalNotFound)
+            return Err(GovernorError::ProposalNotFound);
         }
 
         if snapshot >= Self::env().block_number() {
-            return Ok(ProposalState::Pending)
+            return Ok(ProposalState::Pending);
         }
 
         let deadline = self.proposal_deadline(proposal_id)?;
 
         if deadline >= Self::env().block_number() {
-            return Ok(ProposalState::Active)
+            return Ok(ProposalState::Active);
         }
 
         if self._quorum_reached(&proposal_id) && self._vote_succeeded(&proposal_id) {
@@ -167,7 +144,7 @@ where
         if self.get_votes(Self::env().caller(), Self::env().block_number() - 1)?
             >= self.proposal_threshold()
         {
-            return Err(GovernorError::BelowThreshold)
+            return Err(GovernorError::BelowThreshold);
         }
 
         let description_hash =
@@ -175,11 +152,11 @@ where
         let proposal_id = self._hash_proposal(&proposal, &description_hash);
 
         if proposal.selector.is_empty() {
-            return Err(GovernorError::EmptyProposal)
+            return Err(GovernorError::EmptyProposal);
         }
 
         if !self.data().proposals.get(&proposal_id).is_none() {
-            return Err(GovernorError::ProposalAlreadyExist)
+            return Err(GovernorError::ProposalAlreadyExist);
         }
 
         let vote_start = Self::env().block_number() + self.voting_delay();

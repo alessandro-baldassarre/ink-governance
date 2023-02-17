@@ -1,7 +1,4 @@
-use openbrush::traits::{
-    BlockNumber,
-    Hash,
-};
+use openbrush::traits::{BlockNumber, Hash};
 
 pub type ProposalId = Hash;
 
