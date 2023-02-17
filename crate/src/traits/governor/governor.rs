@@ -95,13 +95,6 @@ pub trait Governor {
     #[ink(message)]
     fn voting_period(&self) -> u32;
 
-    /// Minimum number of cast voted required for a proposal to be successful.
-    ///
-    /// Note: The blockNumber parameter corresponds to the snapshot used for counting vote.
-    /// This allows to scale the quorum depending on values such as the totalSupply of a token at this block.
-    #[ink(message)]
-    fn quorum(&self, block_number: BlockNumber) -> u64;
-
     /// Returns whether account has cast a vote on proposalId
     #[ink(message)]
     fn has_voted(&self, proposal_id: ProposalId, account: AccountId) -> bool;
