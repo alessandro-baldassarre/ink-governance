@@ -1,6 +1,6 @@
 pub use crate::governor::{governor, voter::Internal};
 use openbrush::{
-    contracts::access_control::{self, RoleType},
+    contracts::access_control::{self, RoleType, DEFAULT_ADMIN_ROLE},
     modifiers,
     storage::Mapping,
     traits::{AccountId, BlockNumber, OccupiedStorage, Storage},
@@ -16,7 +16,7 @@ use self::governor::{
     voter, Data, GovernorError,
 };
 
-const MEMBERS: RoleType = ink::selector_id!("MEMBERS");
+const MEMBER: RoleType = ink::selector_id!("MEMBER");
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
 
 #[derive(Default, Debug)]
@@ -30,7 +30,7 @@ pub trait VotingGroup {
     fn set_voting_power(
         &mut self,
         account: AccountId,
-        voting_power: u64,
+        voting_power: Option<u64>,
     ) -> Result<(), GovernorError>;
 }
 
@@ -55,31 +55,59 @@ where
     T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<C, V>>
         + OccupiedStorage<{ access_control::STORAGE_KEY }, WithData = access_control::Data<M>>,
 {
-    #[modifiers(access_control::only_role(MEMBERS))]
+    #[modifiers(access_control::only_role(DEFAULT_ADMIN_ROLE))]
     default fn set_voting_power(
         &mut self,
         account: AccountId,
-        voting_power: u64,
+        voting_power: Option<u64>,
     ) -> Result<(), GovernorError> {
-        let votes = self
-            .data::<Data<C, V>>()
-            .voting_module
-            ._get_votes(&account, &1, &vec![]);
+        self.data::<Data<C, V>>().voting_module._set_voting_power(
+            account,
+            Self::env().block_number(),
+            voting_power.unwrap(),
+        );
         Ok(())
     }
 }
 
-impl<T> Internal for T
+impl<T, M> Internal for T
 where
-    T: Storage<governor::Data<Counting, Voting>>,
-    T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<Counting, Voting>>,
+    M: access_control::members::MembersManager,
+    M: Storable
+        + StorableHint<ManualKey<{ access_control::STORAGE_KEY }>>
+        + AutoStorableHint<
+            ManualKey<3218979580, ManualKey<{ access_control::STORAGE_KEY }>>,
+            Type = M,
+        >,
+    T: Storage<governor::Data<Counting, Voting>> + Storage<access_control::Data<M>>,
+    T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<Counting, Voting>>
+        + OccupiedStorage<{ access_control::STORAGE_KEY }, WithData = access_control::Data<M>>,
 {
+    #[modifiers(access_control::only_role(MEMBER))]
     default fn _get_votes(
-        &self,
-        account: &AccountId,
-        block_number: &BlockNumber,
-        params: &Vec<u8>,
-    ) -> u64 {
-        0
+        &mut self,
+        account: AccountId,
+        block_number: BlockNumber,
+        _params: Vec<u8>,
+    ) -> Result<u64, GovernorError> {
+        let votes = self
+            .data::<Data<Counting, Voting>>()
+            .voting_module
+            .voting_power
+            .get(&(account, block_number))
+            .unwrap();
+        Ok(votes)
+    }
+
+    default fn _set_voting_power(
+        &mut self,
+        account: AccountId,
+        block_number: BlockNumber,
+        voting_power: u64,
+    ) {
+        self.data::<Data<Counting, Voting>>()
+            .voting_module
+            .voting_power
+            .insert(&(account, block_number), &voting_power);
     }
 }

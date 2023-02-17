@@ -17,5 +17,18 @@ pub struct Voting {
 
 pub trait Internal {
     /// Get the voting weight of account at a specific blockNumber, for a vote as described by params.
-    fn _get_votes(&self, account: &AccountId, block_number: &BlockNumber, params: &Vec<u8>) -> u64;
+    fn _get_votes(
+        &mut self,
+        account: AccountId,
+        block_number: BlockNumber,
+        params: Vec<u8>,
+    ) -> Result<u64, GovernorError>;
+
+    /// Set voting_power
+    fn _set_voting_power(
+        &mut self,
+        account: AccountId,
+        block_number: BlockNumber,
+        voting_power: u64,
+    );
 }

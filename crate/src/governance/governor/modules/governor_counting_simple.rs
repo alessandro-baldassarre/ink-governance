@@ -1,5 +1,5 @@
 use crate::governor::counter::Internal;
-use crate::governor_votes::Voting;
+use crate::governor::voter::Voting;
 pub use crate::{
     governor::{counter, governor, voter},
     traits::governor::modules::counter::*,

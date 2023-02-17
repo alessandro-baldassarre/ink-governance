@@ -223,22 +223,22 @@ where
     }
 
     default fn get_votes(
-        &self,
+        &mut self,
         account: AccountId,
         block_number: BlockNumber,
     ) -> Result<u64, GovernorError> {
-        let votes = self._get_votes(&account, &block_number, &self._default_params())?;
+        let votes = self._get_votes(account, block_number, self._default_params())?;
 
         Ok(votes)
     }
 
     default fn get_votes_with_params(
-        &self,
+        &mut self,
         account: AccountId,
         block_number: BlockNumber,
         params: Vec<u8>,
     ) -> Result<u64, GovernorError> {
-        let votes = self._get_votes(&account, &block_number, &params)?;
+        let votes = self._get_votes(account, block_number, params)?;
 
         Ok(votes)
     }
@@ -347,10 +347,10 @@ pub trait Internal {
 
     /// Get the voting weight of account at a specific blockNumber, for a vote as described by params.
     fn _get_votes(
-        &self,
-        account: &AccountId,
-        block_number: &BlockNumber,
-        params: &Vec<u8>,
+        &mut self,
+        account: AccountId,
+        block_number: BlockNumber,
+        params: Vec<u8>,
     ) -> Result<u64, GovernorError>;
 
     /// Register a vote for proposalId by account with a given support, voting weight and voting params.
@@ -486,15 +486,16 @@ where
     }
 
     default fn _get_votes(
-        &self,
-        account: &AccountId,
-        block_number: &BlockNumber,
-        params: &Vec<u8>,
+        &mut self,
+        account: AccountId,
+        block_number: BlockNumber,
+        params: Vec<u8>,
     ) -> Result<u64, GovernorError> {
-        Ok(self
+        let votes = self
             .data()
             .voting_module
-            ._get_votes(account, block_number, params))
+            ._get_votes(account, block_number, params)?;
+        Ok(votes)
     }
 
     default fn _count_vote(
