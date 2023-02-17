@@ -118,7 +118,7 @@ pub trait Governor {
     /// Returns the voting power of an account at a specific blockNumber.
     #[ink(message)]
     fn get_votes(
-        &self,
+        &mut self,
         account: AccountId,
         block_number: BlockNumber,
     ) -> Result<u64, GovernorError>;
@@ -126,7 +126,7 @@ pub trait Governor {
     /// Returns the voting power of an account at a specific blockNumber given additional encoded parameters.
     #[ink(message)]
     fn get_votes_with_params(
-        &self,
+        &mut self,
         account: AccountId,
         block_number: BlockNumber,
         params: Vec<u8>,
