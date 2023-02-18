@@ -2,10 +2,11 @@
 #![feature(min_specialization)]
 
 #[openbrush::contract]
-pub mod my_access_control {
+pub mod my_governor {
     use ink_governance::governor::modules::governor_counting_simple;
-    use ink_governance::governor::modules::governor_votes_members;
-    use ink_governance::governor::{governor, governor::*};
+    use ink_governance::governor::modules::{governor_votes_members, governor_votes_members::*};
+    use ink_governance::governor::{governor, governor::*, GovernorError};
+    use openbrush::contracts::access_control::access_control;
     use openbrush::traits::Storage;
 
     #[ink(storage)]
@@ -14,16 +15,22 @@ pub mod my_access_control {
         #[storage_field]
         governor:
             governor::Data<governor_counting_simple::Counting, governor_votes_members::Voting>,
+        #[storage_field]
+        access_control: access_control::Data,
     }
 
     impl Governor for Contract {}
 
+    impl VotingGroup for Contract {}
+
     impl Contract {
         #[ink(constructor)]
-        pub fn new() -> Self {
-            let instance = Self::default();
+        pub fn new(account: AccountId) -> Result<Self, GovernorError> {
+            let mut instance = Self::default();
 
-            instance
+            governor_votes_members::VotingGroup::set_voting_power(&mut instance, account, None)?;
+
+            Ok(instance)
         }
     }
 }

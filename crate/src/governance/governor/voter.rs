@@ -23,12 +23,4 @@ pub trait Voter {
         block_number: BlockNumber,
         params: Vec<u8>,
     ) -> Result<u64, GovernorError>;
-
-    /// Set voting_power
-    fn _set_voting_power(
-        &mut self,
-        account: AccountId,
-        block_number: BlockNumber,
-        voting_power: u64,
-    );
 }

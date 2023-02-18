@@ -1,15 +1,18 @@
-pub use crate::{
-    governance::governor, governance::governor::modules::governor_votes_members,
-    governance::governor::voter, governance::governor::voter::*,
-};
+use crate::governance::governor::voter;
 
-use crate::governor::GovernorError;
+use crate::governor::*;
+
+use crate::{governor::counter, governor::GovernorError};
 use openbrush::{
+    contracts::access_control::access_control,
     storage::Mapping,
-    traits::{AccountId, BlockNumber},
+    traits::{AccountId, BlockNumber, OccupiedStorage, Storage},
 };
 
-use ink::prelude::vec::Vec;
+use ink::{
+    prelude::vec::Vec,
+    storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint},
+};
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
 
@@ -38,14 +41,34 @@ impl voter::Voter for Voting {
         let votes = self.voting_power.get(&(account, block_number)).unwrap();
         Ok(votes)
     }
+}
 
-    default fn _set_voting_power(
+impl<T, C, V, M> VotingGroup for T
+where
+    M: access_control::members::MembersManager,
+    M: Storable
+        + StorableHint<ManualKey<{ access_control::STORAGE_KEY }>>
+        + AutoStorableHint<
+            ManualKey<3218979580, ManualKey<{ access_control::STORAGE_KEY }>>,
+            Type = M,
+        >,
+    C: counter::Counter,
+    C: Storable
+        + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
+        + AutoStorableHint<ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>, Type = C>,
+    V: voter::Voter,
+    V: Storable
+        + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
+        + AutoStorableHint<ManualKey<3230629697, ManualKey<{ governor::STORAGE_KEY }>>, Type = V>,
+    T: Storage<access_control::Data<M>> + Storage<governor::Data<C, V>>,
+    T: OccupiedStorage<{ access_control::STORAGE_KEY }, WithData = access_control::Data<M>>
+        + OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<C, V>>,
+{
+    default fn set_voting_power(
         &mut self,
         account: AccountId,
-        block_number: BlockNumber,
-        voting_power: u64,
-    ) {
-        self.voting_power
-            .insert(&(account, block_number), &voting_power);
+        voting_power: Option<u64>,
+    ) -> Result<(), GovernorError> {
+        Ok(())
     }
 }
