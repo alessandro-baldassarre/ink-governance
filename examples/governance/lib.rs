@@ -28,6 +28,10 @@ pub mod my_governor {
         pub fn new(account: AccountId) -> Result<Self, GovernorError> {
             let mut instance = Self::default();
 
+            let caller = Self::env().caller();
+
+            access_control::Internal::_init_with_admin(&mut instance, caller);
+
             governor_votes_members::VotingGroup::set_voting_power(&mut instance, account, None)?;
 
             Ok(instance)

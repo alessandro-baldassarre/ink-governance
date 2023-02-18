@@ -3,6 +3,8 @@ use crate::governance::governor::voter;
 use crate::governor::*;
 
 use crate::{governor::counter, governor::GovernorError};
+use openbrush::contracts::access_control::DEFAULT_ADMIN_ROLE;
+use openbrush::modifiers;
 use openbrush::{
     contracts::access_control::access_control,
     storage::Mapping,
@@ -41,6 +43,17 @@ impl voter::Voter for Voting {
         let votes = self.voting_power.get(&(account, block_number)).unwrap();
         Ok(votes)
     }
+
+    default fn _set_voting_power(
+        &mut self,
+        account: AccountId,
+        block_number: BlockNumber,
+        voting_power: u64,
+    ) -> Result<(), GovernorError> {
+        self.voting_power
+            .insert(&(account, block_number), &voting_power);
+        Ok(())
+    }
 }
 
 impl<T, C, V, M> VotingGroup for T
@@ -64,11 +77,18 @@ where
     T: OccupiedStorage<{ access_control::STORAGE_KEY }, WithData = access_control::Data<M>>
         + OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<C, V>>,
 {
+    #[modifiers(access_control::only_role(DEFAULT_ADMIN_ROLE))]
     default fn set_voting_power(
         &mut self,
         account: AccountId,
         voting_power: Option<u64>,
     ) -> Result<(), GovernorError> {
+        let voting_power = voting_power.unwrap_or(1);
+        self.data::<Data<C, V>>().voting_module._set_voting_power(
+            account,
+            Self::env().block_number(),
+            voting_power,
+        )?;
         Ok(())
     }
 }
