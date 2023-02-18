@@ -30,7 +30,6 @@ std = [
 ]
 
 governor = []
-governor_votes_members = []
-governor_counting_simple = []
+
 
 test-all = ["governor"]

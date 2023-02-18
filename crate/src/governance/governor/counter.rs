@@ -11,7 +11,7 @@ pub struct Counting {
     pub _reserved: Option<()>,
 }
 
-pub trait Internal {
+pub trait Counter {
     /// Amount of votes already cast passes the threshold limit.
     fn _quorum_reached(&self, proposal_id: &ProposalId) -> bool;
 

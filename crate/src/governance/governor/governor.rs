@@ -1,4 +1,4 @@
-pub use crate::{governor, governor::counter, governor::voter, traits::governor::*};
+pub use crate::{governor::counter, governor::governor, governor::voter, traits::governor::*};
 pub use governor::governor::Internal as _;
 
 use ink::{
@@ -51,11 +51,11 @@ where
 
 impl<T, C, V> Governor for T
 where
-    C: counter::Internal,
+    C: counter::Counter,
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
-    V: voter::Internal,
+    V: voter::Voter,
     V: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
@@ -425,11 +425,11 @@ pub trait Internal {
 
 impl<T, C, V> Internal for T
 where
-    C: counter::Internal,
+    C: counter::Counter,
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
-    V: voter::Internal,
+    V: voter::Voter,
     V: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,

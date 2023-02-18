@@ -15,7 +15,7 @@ pub struct Voting {
     pub _reserved: Option<()>,
 }
 
-pub trait Internal {
+pub trait Voter {
     /// Get the voting weight of account at a specific blockNumber, for a vote as described by params.
     fn _get_votes(
         &mut self,

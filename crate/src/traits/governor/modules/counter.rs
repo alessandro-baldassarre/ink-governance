@@ -1,7 +1,5 @@
 use openbrush::traits::{BlockNumber, Hash};
 
-pub type ProposalId = Hash;
-
 #[openbrush::wrapper]
 pub type CounterRef = dyn Counter;
 
