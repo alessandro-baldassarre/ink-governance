@@ -1,5 +1,10 @@
-pub use crate::{governor::counter, governor::governor, governor::voter, traits::governor::*};
-pub use governor::governor::Internal as _;
+pub use crate::governor::Internal as _;
+pub use crate::traits::governor::*;
+
+use crate::governor::counter;
+use crate::governor::voter;
+
+use ink::prelude::vec::Vec;
 
 use ink::{
     env::{
@@ -469,7 +474,7 @@ where
     }
 
     default fn _hash_proposal(&self, proposal: &Proposal, description_hash: &Hash) -> ProposalId {
-        let mut hash_data: Vec<u8> = vec![];
+        let mut hash_data: Vec<u8> = Vec::new();
 
         hash_data.append(&mut scale::Encode::encode(&proposal));
         hash_data.append(&mut scale::Encode::encode(&description_hash));
@@ -510,7 +515,7 @@ where
     }
 
     default fn _default_params(&self) -> Vec<u8> {
-        vec![]
+        Vec::default()
     }
 
     default fn _execute(

@@ -8,3 +8,4 @@ pub mod modules {
 pub mod voter;
 
 pub use governor::*;
+pub use modules::*;

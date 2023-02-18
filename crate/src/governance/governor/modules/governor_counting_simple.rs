@@ -1,14 +1,12 @@
-use crate::governor::voter::Voting;
 pub use crate::{
-    governor::{counter, governor, voter},
-    traits::governor::*,
+    governance::governor, governance::governor::counter, governance::governor::counter::*,
+    governance::governor::modules::governor_counting_simple,
 };
-use openbrush::traits::{AccountId, BlockNumber, OccupiedStorage, Storage};
+use openbrush::traits::AccountId;
 
-use ink::{
-    prelude::vec::Vec,
-    storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint},
-};
+use ink::prelude::vec::Vec;
+
+use self::governor::ProposalId;
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Counting);
 
@@ -19,21 +17,21 @@ pub struct Counting {
 }
 
 impl counter::Counter for Counting {
-    default fn _quorum_reached(&self, proposal_id: &ProposalId) -> bool {
+    default fn _quorum_reached(&self, _proposal_id: &ProposalId) -> bool {
         false
     }
 
-    default fn _vote_succeeded(&self, proposal_id: &ProposalId) -> bool {
+    default fn _vote_succeeded(&self, _proposal_id: &ProposalId) -> bool {
         false
     }
 
     default fn _count_vote(
         &self,
-        proposal_id: &ProposalId,
-        account: &AccountId,
-        support: &u8,
-        weight: &u64,
-        params: &Vec<u8>,
+        _proposal_id: &ProposalId,
+        _account: &AccountId,
+        _support: &u8,
+        _weight: &u64,
+        _params: &Vec<u8>,
     ) {
     }
 }
