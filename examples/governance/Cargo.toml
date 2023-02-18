@@ -1,5 +1,5 @@
 [package]
-name = "governance"
+name = "my_governor"
 version = "0.1.0"
 authors = ["[your_name] <[your_email]>"]
 edition = "2021"
@@ -33,5 +33,4 @@ std = [
 ]
 ink-as-dependency = []
 
-[profile.dev]
-codegen-units = 16
+
