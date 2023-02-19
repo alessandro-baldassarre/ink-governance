@@ -12,8 +12,6 @@ use openbrush::{
 pub enum GovernorError {
     /// Custom error type for cases if writer of traits added own restrictions
     Custom(String),
-    /// Error from AccessControl
-    AccessControlError(AccessControlError),
     /// Returned if the proposal was not found.
     ProposalNotFound,
     /// Returned if the proposal submitted has invalid parameters
