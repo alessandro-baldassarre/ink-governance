@@ -34,13 +34,13 @@ impl From<AccessControlError> for GovernorError {
     fn from(access: AccessControlError) -> Self {
         match access {
             AccessControlError::MissingRole => {
-                GovernorError::AccessControlError(AccessControlError::MissingRole)
+                GovernorError::Custom(String::from("AC::MissingRole"))
             }
             AccessControlError::RoleRedundant => {
-                GovernorError::AccessControlError(AccessControlError::RoleRedundant)
+                GovernorError::Custom(String::from("AC::RoleRedundant"))
             }
             AccessControlError::InvalidCaller => {
-                GovernorError::AccessControlError(AccessControlError::InvalidCaller)
+                GovernorError::Custom(String::from("AC::InvalidCaller"))
             }
         }
     }

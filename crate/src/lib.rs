@@ -11,5 +11,5 @@ pub use governance::governor;
 #[cfg(feature = "governor_counting_simple")]
 pub use governor::governor_counting_simple;
 
-#[cfg(feature = "governor_votes_members")]
-pub use governor::governor_votes_members;
+#[cfg(feature = "governor_voting_group")]
+pub use governor::governor_voting_group;

@@ -1,8 +1,5 @@
 use ink::prelude::vec::Vec;
-use openbrush::{
-    storage::Mapping,
-    traits::{AccountId, BlockNumber},
-};
+use openbrush::traits::{AccountId, BlockNumber};
 
 pub use crate::traits::governor::*;
 
@@ -11,7 +8,6 @@ pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Voting {
-    pub voting_power: Mapping<AccountId, u64>,
     pub _reserved: Option<()>,
 }
 
@@ -22,12 +18,5 @@ pub trait Voter {
         account: AccountId,
         block_number: BlockNumber,
         params: Vec<u8>,
-    ) -> Result<u64, GovernorError>;
-
-    fn _set_voting_power(
-        &mut self,
-        account: AccountId,
-        block_number: BlockNumber,
-        voting_power: u64,
-    ) -> Result<(), GovernorError>;
+    ) -> Option<u64>;
 }

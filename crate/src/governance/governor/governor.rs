@@ -496,11 +496,15 @@ where
         block_number: BlockNumber,
         params: Vec<u8>,
     ) -> Result<u64, GovernorError> {
-        let votes = self
+        if let Some(votes) = self
             .data()
             .voting_module
-            ._get_votes(account, block_number, params)?;
-        Ok(votes)
+            ._get_votes(account, block_number, params)
+        {
+            return Ok(votes);
+        }
+
+        Err(GovernorError::Custom(String::from("no votes")))
     }
 
     default fn _count_vote(
