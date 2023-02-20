@@ -1,9 +1,9 @@
 use openbrush::{
     contracts::{
         access_control::AccessControlError,
-        traits::{pausable::PausableError, proxy::OwnableError},
+        traits::{errors::ReentrancyGuardError, pausable::PausableError, proxy::OwnableError},
     },
-    traits::String,
+    traits::{AccountId, String},
 };
 
 use super::GovernorError;
@@ -17,19 +17,27 @@ pub enum VotingGroupError {
     AccessControlError(AccessControlError),
     /// Error from Governor
     GovernorError(GovernorError),
+    /// Entered duplicate member
+    DuplicatedMember {
+        member: AccountId,
+    },
+    // No members entered
+    ZeroMembers,
+    /// Member not found
+    NoMember,
 }
 
-impl From<AccessControlError> for GovernorError {
+impl From<AccessControlError> for VotingGroupError {
     fn from(access: AccessControlError) -> Self {
         match access {
             AccessControlError::MissingRole => {
-                GovernorError::AccessControlError(AccessControlError::MissingRole)
+                VotingGroupError::AccessControlError(AccessControlError::MissingRole)
             }
             AccessControlError::RoleRedundant => {
-                GovernorError::AccessControlError(AccessControlError::RoleRedundant)
+                VotingGroupError::AccessControlError(AccessControlError::RoleRedundant)
             }
             AccessControlError::InvalidCaller => {
-                GovernorError::AccessControlError(AccessControlError::InvalidCaller)
+                VotingGroupError::AccessControlError(AccessControlError::InvalidCaller)
             }
         }
     }
@@ -68,7 +76,7 @@ impl From<ReentrancyGuardError> for VotingGroupError {
 }
 
 impl From<GovernorError> for VotingGroupError {
-    fn from(governor: GovernorError) -> Self {
+    fn from(_governor: GovernorError) -> Self {
         VotingGroupError::Custom(String::from("G::Governor Error"))
     }
 }
