@@ -11,7 +11,7 @@ openbrush  = { git = "https://github.com/727-Ventures/openbrush-contracts", defa
 scale      = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.3.1", default-features = false, features = ["derive"], optional = true }
 
-ink-governance = { path = "../../crate/", default-features = false, features = ["governor", "governor_counting_simple" , "governor_votes_members"] }
+ink-governance = { path = "../../crate/", default-features = false, features = ["governor", "governor_counting_simple" , "governor_voting_group"] }
 
 
 [lib]
