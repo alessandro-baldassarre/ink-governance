@@ -9,7 +9,7 @@ use crate::traits::errors::VotingGroupError;
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub struct VotingMember {
     /// The `AccountId` of the member.
-    pub member: AccountId,
+    pub account: AccountId,
     /// The weight of one vote of this member.
     pub voting_power: u64,
 }
@@ -17,7 +17,7 @@ pub struct VotingMember {
 impl Default for VotingMember {
     fn default() -> Self {
         Self {
-            member: ZERO_ADDRESS.into(),
+            account: ZERO_ADDRESS.into(),
             voting_power: Default::default(),
         }
     }
@@ -32,9 +32,13 @@ pub trait VotingGroup {
     /// Add one or more new voter members
     /// Remove one or more existing voter members
     ///
-    /// Note: The actions are performed in sequence (Update->Add->Remove) so if you enter an account more than once keep in mind the sequence.
+    /// Note: The actions are performed in sequence (Update->Add->Remove) so if if you enter an account more than once, keep this sequence in mind.
     #[ink(message)]
-    fn update_members(&mut self, members: Vec<VotingMember>) -> Result<(), VotingGroupError>;
+    fn update_members(
+        &mut self,
+        members: Vec<VotingMember>,
+        members_to_remove: Vec<VotingMember>,
+    ) -> Result<(), VotingGroupError>;
 
     /// Returns the info of one or more voter members
     #[ink(message)]
