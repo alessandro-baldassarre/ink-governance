@@ -32,12 +32,12 @@ pub struct Voting {
 
 impl voter::Voter for Voting {
     default fn _get_votes(
-        &mut self,
-        account: AccountId,
+        &self,
+        account: &AccountId,
         _block_number: BlockNumber,
-        _params: Vec<u8>,
+        _params: &Vec<u8>,
     ) -> Option<u64> {
-        self.members.get(&account)
+        self.members.get(account)
     }
 }
 

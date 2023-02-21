@@ -148,10 +148,6 @@ where
         0
     }
 
-    default fn has_voted(&self, _proposal_id: ProposalId, _account: AccountId) -> bool {
-        false
-    }
-
     default fn propose(
         &mut self,
         proposal: Proposal,
@@ -167,7 +163,7 @@ where
             Hash::try_from(Self::env().hash_bytes::<Blake2x256>(&description).as_ref()).unwrap();
         let proposal_id = self._hash_proposal(&proposal, &description_hash);
 
-        if proposal.selector.is_empty() {
+        if proposal.selector.is_empty() && proposal.description.is_empty() {
             return Err(GovernorError::EmptyProposal);
         }
 
@@ -231,28 +227,28 @@ where
     }
 
     default fn get_votes(
-        &mut self,
+        &self,
         account: AccountId,
         block_number: BlockNumber,
     ) -> Result<u64, GovernorError> {
-        let votes = self._get_votes(account, block_number, self._default_params())?;
+        let votes = self._get_votes(&account, block_number, &self._default_params())?;
 
         Ok(votes)
     }
 
     default fn get_votes_with_params(
-        &mut self,
+        &self,
         account: AccountId,
         block_number: BlockNumber,
         params: Vec<u8>,
     ) -> Result<u64, GovernorError> {
-        let votes = self._get_votes(account, block_number, params)?;
+        let votes = self._get_votes(&account, block_number, &params)?;
 
         Ok(votes)
     }
 
     default fn cast_vote(
-        &self,
+        &mut self,
         proposal_id: ProposalId,
         support: u8,
     ) -> Result<u64, GovernorError> {
@@ -262,7 +258,7 @@ where
     }
 
     default fn cast_vote_with_reason(
-        &self,
+        &mut self,
         proposal_id: ProposalId,
         support: u8,
         reason: String,
@@ -273,7 +269,7 @@ where
     }
 
     default fn cast_vote_with_reason_and_params(
-        &self,
+        &mut self,
         proposal_id: ProposalId,
         support: u8,
         reason: String,
@@ -329,20 +325,20 @@ pub trait Internal {
     fn _emit_proposal_executed(&self, _proposal_id: &ProposalId);
     fn _emit_vote_cast(
         &self,
-        _voter: AccountId,
-        _proposal_id: ProposalId,
+        _voter: &AccountId,
+        _proposal_id: &ProposalId,
         _support: u8,
         _weight: u64,
-        _reason: String,
+        _reason: &String,
     );
     fn _emit_vote_cast_with_params(
         &self,
-        _voter: AccountId,
-        _proposal_id: ProposalId,
+        _voter: &AccountId,
+        _proposal_id: &ProposalId,
         _support: u8,
         _weight: u64,
-        _reason: String,
-        _params: Vec<u8>,
+        _reason: &String,
+        _params: &Vec<u8>,
     );
 
     fn _hash_proposal(&self, proposal: &Proposal, description_hash: &Hash) -> ProposalId;
@@ -355,23 +351,23 @@ pub trait Internal {
 
     /// Get the voting weight of account at a specific blockNumber, for a vote as described by params.
     fn _get_votes(
-        &mut self,
-        account: AccountId,
+        &self,
+        account: &AccountId,
         block_number: BlockNumber,
-        params: Vec<u8>,
+        params: &Vec<u8>,
     ) -> Result<u64, GovernorError>;
 
     /// Register a vote for proposalId by account with a given support, voting weight and voting params.
     ///
     /// Note: Support is generic and can represent various things depending on the voting system used.
     fn _count_vote(
-        &self,
+        &mut self,
         proposal_id: &ProposalId,
         account: &AccountId,
         support: u8,
-        weight: &u64,
+        weight: u64,
         params: &Vec<u8>,
-    ) -> u64;
+    );
 
     /// Default additional encoded parameters used by castVote methods that don’t include them
     ///
@@ -407,7 +403,7 @@ pub trait Internal {
     ///
     /// Emits a VoteCast event.
     fn _cast_vote(
-        &self,
+        &mut self,
         proposal_id: &ProposalId,
         account: &AccountId,
         support: u8,
@@ -419,7 +415,7 @@ pub trait Internal {
     ///
     /// Emits a VoteCast event.
     fn _cast_vote_with_params(
-        &self,
+        &mut self,
         proposal_id: &ProposalId,
         account: &AccountId,
         support: u8,
@@ -458,21 +454,21 @@ where
     default fn _emit_proposal_executed(&self, _proposal_id: &ProposalId) {}
     default fn _emit_vote_cast(
         &self,
-        _voter: AccountId,
-        _proposal_id: ProposalId,
+        _voter: &AccountId,
+        _proposal_id: &ProposalId,
         _support: u8,
         _weight: u64,
-        _reason: String,
+        _reason: &String,
     ) {
     }
     default fn _emit_vote_cast_with_params(
         &self,
-        _voter: AccountId,
-        _proposal_id: ProposalId,
+        _voter: &AccountId,
+        _proposal_id: &ProposalId,
         _support: u8,
         _weight: u64,
-        _reason: String,
-        _params: Vec<u8>,
+        _reason: &String,
+        _params: &Vec<u8>,
     ) {
     }
 
@@ -492,15 +488,18 @@ where
             .unwrap()
     }
 
-    default fn _vote_succeeded(&self, _proposal_id: &ProposalId) -> bool {
-        false
+    default fn _vote_succeeded(&self, proposal_id: &ProposalId) -> bool {
+        self.data()
+            .counting_module
+            ._vote_succeeded(proposal_id)
+            .unwrap()
     }
 
     default fn _get_votes(
-        &mut self,
-        account: AccountId,
+        &self,
+        account: &AccountId,
         block_number: BlockNumber,
-        params: Vec<u8>,
+        params: &Vec<u8>,
     ) -> Result<u64, GovernorError> {
         if let Some(votes) = self
             .data()
@@ -510,18 +509,21 @@ where
             return Ok(votes);
         }
 
-        Err(GovernorError::Custom(String::from("no votes")))
+        Err(GovernorError::Custom(String::from("No account")))
     }
 
     default fn _count_vote(
-        &self,
-        _proposal_id: &ProposalId,
-        _account: &AccountId,
-        _support: u8,
-        _weight: &u64,
-        _params: &Vec<u8>,
-    ) -> u64 {
-        0
+        &mut self,
+        proposal_id: &ProposalId,
+        account: &AccountId,
+        support: u8,
+        weight: u64,
+        params: &Vec<u8>,
+    ) {
+        self.data()
+            .counting_module
+            ._count_vote(proposal_id, account, support, weight, params)
+            .unwrap()
     }
 
     default fn _default_params(&self) -> Vec<u8> {
@@ -602,7 +604,7 @@ where
     }
 
     default fn _cast_vote(
-        &self,
+        &mut self,
         proposal_id: &ProposalId,
         account: &AccountId,
         support: u8,
@@ -619,14 +621,41 @@ where
     }
 
     default fn _cast_vote_with_params(
-        &self,
-        _proposal_id: &ProposalId,
-        _account: &AccountId,
-        _support: u8,
-        _reason: &String,
-        _params: &Vec<u8>,
+        &mut self,
+        proposal_id: &ProposalId,
+        account: &AccountId,
+        support: u8,
+        reason: &String,
+        params: &Vec<u8>,
     ) -> Result<u64, GovernorError> {
-        Ok(0)
+        let propoposal_core = self
+            .data()
+            .proposals
+            .get(proposal_id)
+            .ok_or(GovernorError::ProposalNotFound)?;
+
+        let weight = self
+            .data()
+            ._get_votes(account, propoposal_core.vote_start, params)?;
+
+        self.data()
+            ._count_vote(proposal_id, account, support, weight, params);
+
+        if params.len() == 0 {
+            self.data()
+                ._emit_vote_cast(account, proposal_id, support, weight, reason);
+        } else {
+            self.data()._emit_vote_cast_with_params(
+                account,
+                proposal_id,
+                support,
+                weight,
+                reason,
+                params,
+            );
+        }
+
+        Ok(weight)
     }
 
     default fn _executor(&self) -> AccountId {

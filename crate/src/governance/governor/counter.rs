@@ -28,7 +28,7 @@ pub trait Counter {
         proposal_id: &ProposalId,
         account: &AccountId,
         support: u8,
-        weight: &u64,
+        weight: u64,
         params: &Vec<u8>,
     ) -> Result<(), CountingError>;
 }

@@ -88,10 +88,6 @@ pub trait Governor {
     #[ink(message)]
     fn voting_period(&self) -> u32;
 
-    /// Returns whether account has cast a vote on proposalId
-    #[ink(message)]
-    fn has_voted(&self, proposal_id: ProposalId, account: AccountId) -> bool;
-
     /// Create a new proposal.
     ///
     /// Emits a ProposalCreated event.
@@ -118,7 +114,7 @@ pub trait Governor {
     /// Returns the voting power of an account at a specific blockNumber.
     #[ink(message)]
     fn get_votes(
-        &mut self,
+        &self,
         account: AccountId,
         block_number: BlockNumber,
     ) -> Result<u64, GovernorError>;
@@ -126,7 +122,7 @@ pub trait Governor {
     /// Returns the voting power of an account at a specific blockNumber given additional encoded parameters.
     #[ink(message)]
     fn get_votes_with_params(
-        &mut self,
+        &self,
         account: AccountId,
         block_number: BlockNumber,
         params: Vec<u8>,
@@ -138,7 +134,7 @@ pub trait Governor {
     ///
     /// Returns the weight of the vote
     #[ink(message)]
-    fn cast_vote(&self, proposal_id: ProposalId, support: u8) -> Result<u64, GovernorError>;
+    fn cast_vote(&mut self, proposal_id: ProposalId, support: u8) -> Result<u64, GovernorError>;
 
     /// Cast a vote with a reason.
     ///
@@ -147,7 +143,7 @@ pub trait Governor {
     /// Returns the weight of the vote
     #[ink(message)]
     fn cast_vote_with_reason(
-        &self,
+        &mut self,
         proposal_id: ProposalId,
         support: u8,
         reason: String,
@@ -160,7 +156,7 @@ pub trait Governor {
     /// Returns the weight of the vote
     #[ink(message)]
     fn cast_vote_with_reason_and_params(
-        &self,
+        &mut self,
         proposal_id: ProposalId,
         support: u8,
         reason: String,

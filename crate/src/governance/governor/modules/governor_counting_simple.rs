@@ -52,7 +52,7 @@ impl counter::Counter for Counting {
         proposal_id: &ProposalId,
         account: &AccountId,
         support: u8,
-        weight: &u64,
+        weight: u64,
         _params: &Vec<u8>,
     ) -> Result<(), CountingError> {
         let mut proposal_votes = self
