@@ -1,8 +1,6 @@
 use ink::prelude::vec::Vec;
 use openbrush::traits::{AccountId, BlockNumber};
 
-pub use crate::traits::governor::*;
-
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
 
 #[derive(Default, Debug)]

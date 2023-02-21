@@ -1,6 +1,6 @@
 pub use crate::governor_counting_simple;
 pub use crate::governor_counting_simple::Internal as _;
-pub use crate::traits::governor::modules::counting_simple::*;
+pub use crate::traits::governance::modules::counting_simple::*;
 
 use crate::{
     governance::governor,

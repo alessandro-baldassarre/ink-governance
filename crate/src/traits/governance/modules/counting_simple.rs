@@ -2,7 +2,7 @@ use openbrush::traits::AccountId;
 
 use crate::traits::{
     errors::{CountingError, CountingSimpleError},
-    governor::ProposalId,
+    governance::ProposalId,
 };
 
 /// The choices available to vote on a proposal
@@ -10,9 +10,9 @@ use crate::traits::{
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 #[repr(u8)]
 pub enum VoteType {
-    Against = 1,
-    For = 2,
-    Abstain = 3,
+    Against,
+    For,
+    Abstain,
 }
 
 impl TryFrom<u8> for VoteType {

@@ -1,5 +1,5 @@
 pub use crate::governor::Internal as _;
-pub use crate::{governor, traits::governor::*};
+pub use crate::{governor, traits::governance::*};
 
 use crate::governor::counter;
 use crate::governor::voter;
