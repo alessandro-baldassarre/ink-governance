@@ -13,7 +13,6 @@ scale-info = { version = "2.3.1", default-features = false, features = ["derive"
 
 ink-governance = { path = "../../crate/", default-features = false, features = ["governor", "governor_counting_simple" , "governor_voting_group"] }
 
-
 [lib]
 name = "my_governor"
 path = "lib.rs"
