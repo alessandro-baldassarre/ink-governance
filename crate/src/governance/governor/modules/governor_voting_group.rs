@@ -1,3 +1,4 @@
+pub use crate::governor_voting_group;
 pub use crate::governor_voting_group::Internal as _;
 use crate::traits::errors::VotingGroupError;
 pub use crate::traits::governor::modules::voting_group::*;

@@ -1,6 +1,9 @@
-use openbrush::contracts::{
-    access_control::AccessControlError,
-    traits::{errors::ReentrancyGuardError, pausable::PausableError, proxy::OwnableError},
+use openbrush::{
+    contracts::{
+        access_control::AccessControlError,
+        traits::{errors::ReentrancyGuardError, pausable::PausableError, proxy::OwnableError},
+    },
+    traits::String,
 };
 
 use super::GovernorError;
@@ -14,6 +17,10 @@ pub enum CountingSimpleError {
     AccessControlError(AccessControlError),
     /// Error from Governor
     GovernorError(GovernorError),
+    /// Returns if no account vote was found for that proposal
+    NoResult,
+    /// Returns if no proposal was found
+    NoProposal,
 }
 
 impl From<AccessControlError> for CountingSimpleError {

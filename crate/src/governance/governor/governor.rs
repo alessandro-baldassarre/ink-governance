@@ -1,5 +1,5 @@
 pub use crate::governor::Internal as _;
-pub use crate::traits::governor::*;
+pub use crate::{governor, traits::governor::*};
 
 use crate::governor::counter;
 use crate::governor::voter;
@@ -13,7 +13,7 @@ use ink::{
         CallFlags, DefaultEnvironment, Gas,
     },
     prelude::collections::vec_deque::VecDeque,
-    storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint, StorageLayout},
+    storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint},
 };
 use openbrush::{
     storage::Mapping,
@@ -22,7 +22,10 @@ use openbrush::{
 
 /// A ProposalCore describe internal parameters for a proposal
 #[derive(scale::Decode, scale::Encode)]
-#[cfg_attr(feature = "std", derive(scale_info::TypeInfo, StorageLayout))]
+#[cfg_attr(
+    feature = "std",
+    derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
+)]
 pub struct ProposalCore {
     /// The block number when voting for a proposal start
     pub vote_start: BlockNumber,
@@ -483,7 +486,10 @@ where
     }
 
     default fn _quorum_reached(&self, proposal_id: &ProposalId) -> bool {
-        self.data().counting_module._quorum_reached(proposal_id)
+        self.data()
+            .counting_module
+            ._quorum_reached(proposal_id)
+            .unwrap()
     }
 
     default fn _vote_succeeded(&self, _proposal_id: &ProposalId) -> bool {
