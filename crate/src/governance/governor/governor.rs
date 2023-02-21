@@ -154,7 +154,7 @@ where
         description: String,
     ) -> Result<ProposalId, GovernorError> {
         if self.get_votes(Self::env().caller(), Self::env().block_number() - 1)?
-            >= self.proposal_threshold()
+            <= self.proposal_threshold()
         {
             return Err(GovernorError::BelowThreshold);
         }

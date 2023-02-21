@@ -46,11 +46,19 @@ pub mod my_governor {
         #[ink(constructor)]
         pub fn new(
             admin: Option<AccountId>,
-            members: Vec<VotingMember>,
+            init_members: Vec<VotingMember>,
         ) -> Result<Self, ContractError> {
             let mut instance = Self::default();
 
             let admin = admin.unwrap_or(Self::env().caller());
+
+            let admin_member = VotingMember {
+                account: admin,
+                voting_power: 1,
+            };
+
+            let mut members = init_members;
+            members.push(admin_member);
 
             access_control::Internal::_init_with_admin(&mut instance, admin);
 

@@ -28,7 +28,7 @@ impl TryFrom<u8> for VoteType {
 }
 
 /// A ProposalVote is the rapresentation of the votes a proposal may have.
-#[derive(Debug, Clone, PartialEq, scale::Encode, scale::Decode)]
+#[derive(Debug, Default, Clone, PartialEq, scale::Encode, scale::Decode)]
 #[cfg_attr(
     feature = "std",
     derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
@@ -54,11 +54,7 @@ pub trait CountingSimple {
     fn quorum(&self) -> u64;
     /// Returns whether account has cast a vote on proposalId.
     #[ink(message)]
-    fn has_voted(
-        &self,
-        proposal_id: ProposalId,
-        account: AccountId,
-    ) -> Result<bool, CountingSimpleError>;
+    fn has_voted(&self, proposal_id: ProposalId, account: AccountId) -> bool;
 
     /// Accessor to the internal vote counts.
     #[ink(message)]

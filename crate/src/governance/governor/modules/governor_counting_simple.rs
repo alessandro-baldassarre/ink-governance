@@ -55,14 +55,11 @@ impl counter::Counter for Counting {
         weight: u64,
         _params: &Vec<u8>,
     ) -> Result<(), CountingError> {
-        let mut proposal_votes = self
-            .proposal_votes
-            .get(proposal_id)
-            .ok_or(CountingError::Custom(String::from("Proposal not found")))?;
-        let has_voted = self
-            .has_voted
-            .get(&(*account, *proposal_id))
-            .ok_or(CountingError::Custom(String::from("No account registered")))?;
+        let mut proposal_votes: ProposalVote = Default::default();
+        if let Some(proposal) = self.proposal_votes.get(proposal_id) {
+            proposal_votes = proposal;
+        }
+        let has_voted = self._has_voted(*account, *proposal_id);
         if has_voted {
             return Err(CountingError::VoteAlreadyCast);
         }
@@ -107,17 +104,10 @@ where
         self.data::<Data<C, V>>().counting_module._quorum()
     }
 
-    default fn has_voted(
-        &self,
-        proposal_id: ProposalId,
-        account: AccountId,
-    ) -> Result<bool, CountingSimpleError> {
-        let result = self
-            .data::<Data<C, V>>()
+    default fn has_voted(&self, proposal_id: ProposalId, account: AccountId) -> bool {
+        self.data::<Data<C, V>>()
             .counting_module
-            ._has_voted(account, proposal_id)?;
-
-        Ok(result)
+            ._has_voted(account, proposal_id)
     }
 
     default fn proposal_votes(
@@ -135,11 +125,7 @@ where
 pub trait Internal {
     fn _quorum(&self) -> u64;
 
-    fn _has_voted(
-        &self,
-        account: AccountId,
-        proposal_id: ProposalId,
-    ) -> Result<bool, CountingSimpleError>;
+    fn _has_voted(&self, account: AccountId, proposal_id: ProposalId) -> bool;
 
     fn _proposal_votes(
         &self,
@@ -152,15 +138,11 @@ impl Internal for Counting {
         1
     }
 
-    fn _has_voted(
-        &self,
-        account: AccountId,
-        proposal_id: ProposalId,
-    ) -> Result<bool, CountingSimpleError> {
+    fn _has_voted(&self, account: AccountId, proposal_id: ProposalId) -> bool {
         if let Some(vote) = self.has_voted.get(&(account, proposal_id)) {
-            return Ok(vote);
+            return vote;
         } else {
-            return Err(CountingSimpleError::NoResult);
+            return false;
         }
     }
 
