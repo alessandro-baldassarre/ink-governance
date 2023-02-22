@@ -75,16 +75,16 @@ where
                 if self
                     .data::<Data<C, V>>()
                     .voting_module
-                    ._get_member(member.account)
+                    ._get_member(&member.account)
                     .is_err()
                 {
                     self.data::<Data<C, V>>()
                         .voting_module
-                        ._add_member(member)?;
+                        ._add_member(&member)?;
                 } else {
                     self.data::<Data<C, V>>()
                         .voting_module
-                        ._update_member(member)?;
+                        ._update_member(&member)?;
                 }
             }
         }
@@ -93,7 +93,7 @@ where
             for member in members_to_remove {
                 self.data::<Data<C, V>>()
                     .voting_module
-                    ._remove_member(member)?
+                    ._remove_member(&member)?
             }
         }
 
@@ -110,7 +110,7 @@ where
                 let voting_power = self
                     .data::<Data<C, V>>()
                     .voting_module
-                    ._get_member(member)
+                    ._get_member(&member)
                     .unwrap();
                 VotingMember {
                     account: member,
@@ -122,17 +122,17 @@ where
     }
 }
 pub trait Internal {
-    fn _add_member(&mut self, member: VotingMember) -> Result<(), VotingGroupError>;
+    fn _add_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError>;
 
-    fn _remove_member(&mut self, member: VotingMember) -> Result<(), VotingGroupError>;
+    fn _remove_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError>;
 
-    fn _update_member(&mut self, member: VotingMember) -> Result<(), VotingGroupError>;
+    fn _update_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError>;
 
-    fn _get_member(&self, account: AccountId) -> Result<u64, VotingGroupError>;
+    fn _get_member(&self, account: &AccountId) -> Result<u64, VotingGroupError>;
 }
 
 impl Internal for Voting {
-    fn _add_member(&mut self, member: VotingMember) -> Result<(), VotingGroupError> {
+    fn _add_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError> {
         if !self.members.get(&member.account).is_none() {
             return Err(VotingGroupError::DuplicatedMember {
                 member: member.account,
@@ -143,21 +143,21 @@ impl Internal for Voting {
         Ok(())
     }
 
-    fn _remove_member(&mut self, member: VotingMember) -> Result<(), VotingGroupError> {
-        self._get_member(member.account)?;
+    fn _remove_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError> {
+        self._get_member(&member.account)?;
         self.members.remove(&member.account);
         Ok(())
     }
 
-    fn _update_member(&mut self, member: VotingMember) -> Result<(), VotingGroupError> {
+    fn _update_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError> {
         self._add_member(member)?;
         Ok(())
     }
 
-    fn _get_member(&self, account: AccountId) -> Result<u64, VotingGroupError> {
+    fn _get_member(&self, account: &AccountId) -> Result<u64, VotingGroupError> {
         let voting_power = self
             .members
-            .get(&account)
+            .get(account)
             .ok_or(VotingGroupError::NoMember)?;
         Ok(voting_power)
     }

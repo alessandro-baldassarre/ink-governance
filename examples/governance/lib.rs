@@ -27,6 +27,16 @@ pub mod my_governor {
 
     impl CountingSimple for Contract {}
 
+    // Override the internal methods
+    impl governor::Internal for Contract {
+        fn _voting_delay(&self) -> u32 {
+            1 // 1 block
+        }
+        fn _voting_period(&self) -> u32 {
+            50400 // 1 week
+        }
+    }
+
     #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub enum ContractError {
@@ -50,19 +60,22 @@ pub mod my_governor {
         ) -> Result<Self, ContractError> {
             let mut instance = Self::default();
 
+            // Assign the admin role to the caller if is not set in the parameters
             let admin = admin.unwrap_or(Self::env().caller());
 
-            let admin_member = VotingMember {
-                account: admin,
-                voting_power: 1,
-            };
-
-            let mut members = init_members;
-            members.push(admin_member);
-
+            // Initialize access_control with the admin.
+            //
+            // Note: some methods like update_members has the access control (only_role:admin).
             access_control::Internal::_init_with_admin(&mut instance, admin);
 
-            governor_voting_group::VotingGroup::update_members(&mut instance, members, Vec::new())?;
+            // Initialize the group with the members.
+            //
+            // Note: Only the members of the group can propose or vote a proposal.
+            governor_voting_group::VotingGroup::update_members(
+                &mut instance,
+                init_members,
+                Vec::new(),
+            )?;
             Ok(instance)
         }
     }

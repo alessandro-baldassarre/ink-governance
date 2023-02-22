@@ -137,15 +137,15 @@ where
     }
 
     default fn proposal_threshold(&self) -> u64 {
-        0
+        self.data()._proposal_threshold()
     }
 
     default fn voting_delay(&self) -> u32 {
-        0
+        self.data()._voting_delay()
     }
 
     default fn voting_period(&self) -> u32 {
-        0
+        self.data()._voting_period()
     }
 
     default fn propose(
@@ -341,6 +341,12 @@ pub trait Internal {
         _params: &Vec<u8>,
     );
 
+    fn _proposal_threshold(&self) -> u64;
+
+    fn _voting_delay(&self) -> u32;
+
+    fn _voting_period(&self) -> u32;
+
     fn _hash_proposal(&self, proposal: &Proposal, description_hash: &Hash) -> ProposalId;
 
     /// If amount of votes already cast passes the threshold limit.
@@ -470,6 +476,18 @@ where
         _reason: &String,
         _params: &Vec<u8>,
     ) {
+    }
+
+    default fn _proposal_threshold(&self) -> u64 {
+        0
+    }
+
+    default fn _voting_delay(&self) -> u32 {
+        0
+    }
+
+    default fn _voting_period(&self) -> u32 {
+        0
     }
 
     default fn _hash_proposal(&self, proposal: &Proposal, description_hash: &Hash) -> ProposalId {
