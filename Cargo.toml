@@ -3,4 +3,4 @@ members = [
     "crate"
 ]
 
-exclude = ["examples"]
+exclude = ["examples","tests"]
