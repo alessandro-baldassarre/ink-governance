@@ -32,5 +32,6 @@ governor = []
 governor_counting_simple = []
 governor_voting_group = []
 
+governor_v1 = ["governor","governor_counting_simple","governor_voting_group"]
 
-test-all = ["governor"]
+

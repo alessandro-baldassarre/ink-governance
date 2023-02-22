@@ -28,6 +28,8 @@ pub enum GovernorError {
     CallRevertedWithoutMessage,
     /// Returned if the proposal is not active
     ProposalNotActive,
+    /// Returned if the function was not passed through governance proposal
+    OnlyGovernance,
 }
 
 impl From<AccessControlError> for GovernorError {

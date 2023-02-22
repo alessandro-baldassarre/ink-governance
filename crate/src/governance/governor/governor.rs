@@ -15,6 +15,7 @@ use ink::{
     prelude::collections::vec_deque::VecDeque,
     storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint},
 };
+use openbrush::modifier_definition;
 use openbrush::{
     storage::Mapping,
     traits::{AccountId, BlockNumber, Hash, OccupiedStorage, Storage, String},
@@ -51,10 +52,39 @@ where
         + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
 {
     pub proposals: Mapping<ProposalId, ProposalCore>,
+    // This queue keeps track of the governor operating on itself. Calls to functions protected by the
+    // {only_governance} modifier needs to be whitelisted in this queue. Whitelisting is set in {_before_execute},
+    // consumed by the {only_governance} modifier and eventually reset in {_after_execute}. This ensures that the
+    // execution of {only_governance} protected calls can only be achieved through successful proposals.
     pub governance_call: VecDeque<[u8; 4]>,
+    // The module that determine valid voting options.
     pub counting_module: C,
+    // The module that determine the source of voting power.
     pub voting_module: V,
     pub _reserved: Option<()>,
+}
+
+#[modifier_definition]
+pub fn only_governance<T, C, V, F, R, E>(instance: &mut T, body: F) -> Result<R, E>
+where
+    C: counter::Counter,
+    C: Storable
+        + StorableHint<ManualKey<{ STORAGE_KEY }>>
+        + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
+    V: voter::Voter,
+    V: Storable
+        + StorableHint<ManualKey<{ STORAGE_KEY }>>
+        + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
+    T: Storage<Data<C, V>>,
+    T: OccupiedStorage<STORAGE_KEY, WithData = Data<C, V>>,
+    F: FnOnce(&mut T) -> Result<R, E>,
+    E: From<GovernorError>,
+{
+    if T::env().caller() != instance.data()._executor() {
+        return Err(GovernorError::OnlyGovernance.into());
+    }
+
+    body(instance)
 }
 
 impl<T, C, V> Governor for T
