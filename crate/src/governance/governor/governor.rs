@@ -351,24 +351,24 @@ pub trait Internal {
         _end_block: BlockNumber,
         _description: String,
     );
-    fn _emit_proposal_canceled(&self, _proposal_id: &ProposalId);
-    fn _emit_proposal_executed(&self, _proposal_id: &ProposalId);
+    fn _emit_proposal_canceled(&self, _proposal_id: ProposalId);
+    fn _emit_proposal_executed(&self, _proposal_id: ProposalId);
     fn _emit_vote_cast(
         &self,
-        _voter: &AccountId,
-        _proposal_id: &ProposalId,
+        _voter: AccountId,
+        _proposal_id: ProposalId,
         _support: u8,
         _weight: u64,
-        _reason: &String,
+        _reason: String,
     );
     fn _emit_vote_cast_with_params(
         &self,
-        _voter: &AccountId,
-        _proposal_id: &ProposalId,
+        _voter: AccountId,
+        _proposal_id: ProposalId,
         _support: u8,
         _weight: u64,
-        _reason: &String,
-        _params: &Vec<u8>,
+        _reason: String,
+        _params: Vec<u8>,
     );
 
     fn _proposal_threshold(&self) -> u64;
@@ -486,25 +486,25 @@ where
         _description: String,
     ) {
     }
-    default fn _emit_proposal_canceled(&self, _proposal_id: &ProposalId) {}
-    default fn _emit_proposal_executed(&self, _proposal_id: &ProposalId) {}
+    default fn _emit_proposal_canceled(&self, _proposal_id: ProposalId) {}
+    default fn _emit_proposal_executed(&self, _proposal_id: ProposalId) {}
     default fn _emit_vote_cast(
         &self,
-        _voter: &AccountId,
-        _proposal_id: &ProposalId,
+        _voter: AccountId,
+        _proposal_id: ProposalId,
         _support: u8,
         _weight: u64,
-        _reason: &String,
+        _reason: String,
     ) {
     }
     default fn _emit_vote_cast_with_params(
         &self,
-        _voter: &AccountId,
-        _proposal_id: &ProposalId,
+        _voter: AccountId,
+        _proposal_id: ProposalId,
         _support: u8,
         _weight: u64,
-        _reason: &String,
-        _params: &Vec<u8>,
+        _reason: String,
+        _params: Vec<u8>,
     ) {
     }
 
@@ -602,7 +602,7 @@ where
 
         // Load the state of the contract after the cross call.
         self.load();
-        self._emit_proposal_executed(proposal_id);
+        self._emit_proposal_executed(*proposal_id);
 
         result?.unwrap();
         Ok(())
@@ -647,7 +647,7 @@ where
             }
         }
 
-        self._emit_proposal_canceled(&proposal_id);
+        self._emit_proposal_canceled(proposal_id);
         Ok(proposal_id)
     }
 
@@ -691,15 +691,15 @@ where
 
         if params.len() == 0 {
             self.data()
-                ._emit_vote_cast(account, proposal_id, support, weight, reason);
+                ._emit_vote_cast(*account, *proposal_id, support, weight, reason.to_vec());
         } else {
             self.data()._emit_vote_cast_with_params(
-                account,
-                proposal_id,
+                *account,
+                *proposal_id,
                 support,
                 weight,
-                reason,
-                params,
+                reason.to_vec(),
+                params.to_vec(),
             );
         }
 

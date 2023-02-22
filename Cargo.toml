@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "crate"
+    "crate","examples/*","tests"
 ]
 
-exclude = ["examples","tests"]
