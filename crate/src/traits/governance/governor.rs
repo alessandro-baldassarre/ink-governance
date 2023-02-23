@@ -64,26 +64,10 @@ pub trait Governor {
     #[ink(message)]
     fn proposal_deadline(&self, proposal_id: ProposalId) -> Result<BlockNumber, GovernorError>;
 
-    /// Returns the number of votes required in order for a voter to become a proposer.
-    #[ink(message)]
-    fn proposal_threshold(&self) -> u64;
-
     /// A description of the possible support values for castVote and the way these votes are counted,
     /// meant to be consumed by UIs to show correct vote options and interpret the results.
     #[ink(message)]
     fn counting_mode(&self) -> String;
-
-    /// Returns Delay, in number of blocks, between the proposal is created and the vote starts.
-    /// This can be increassed to leave time for users to buy voting power, or delegate it, before the voting of a proposal starts.
-    #[ink(message)]
-    fn voting_delay(&self) -> u32;
-
-    /// Returns Delay, in number of blocks, between the vote start and vote ends.
-    ///
-    /// Note: The votingDelay can delay the start of the vote. This must be considered when setting
-    /// the voting duration compared to the voting delay.
-    #[ink(message)]
-    fn voting_period(&self) -> u32;
 
     /// Create a new proposal.
     ///
@@ -162,7 +146,7 @@ pub trait Governor {
 
     /// Relays a transaction or function call to an arbitrary target. In cases where the governance
     /// executor is some contract other than the governor itself, like when using a timelock, this
-    /// function can be invoked in a governance proposal to recover tokens or Ether that was sent
+    /// function can be invoked in a governance proposal to recover tokens that was sent
     /// to the governor contract by mistake. Note that if the executor is simply the governor
     /// itself, use of relay is redundant.
     #[ink(message)]

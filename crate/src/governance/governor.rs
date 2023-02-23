@@ -159,18 +159,6 @@ where
         Ok(vote_end)
     }
 
-    default fn proposal_threshold(&self) -> u64 {
-        self.data()._proposal_threshold()
-    }
-
-    default fn voting_delay(&self) -> u32 {
-        self.data()._voting_delay()
-    }
-
-    default fn voting_period(&self) -> u32 {
-        self.data()._voting_period()
-    }
-
     default fn propose(
         &mut self,
         proposal: Proposal,
@@ -178,8 +166,8 @@ where
     ) -> Result<ProposalId, GovernorError> {
         if self.get_votes(
             Self::env().caller(),
-            Self::env().block_number().checked_sub(1).unwrap_or(0),
-        )? <= self.proposal_threshold()
+            Self::env().block_number().saturating_sub(1),
+        )? <= self._proposal_threshold()
         {
             return Err(GovernorError::BelowThreshold);
         }
@@ -196,8 +184,8 @@ where
             return Err(GovernorError::ProposalAlreadyExist);
         }
 
-        let vote_start = Self::env().block_number() + self.voting_delay();
-        let vote_end = vote_start + self.voting_period();
+        let vote_start = Self::env().block_number() + self._voting_delay();
+        let vote_end = vote_start + self._voting_period();
 
         let proposal_core = ProposalCore {
             vote_start,
@@ -366,10 +354,18 @@ pub trait Internal {
         _params: Vec<u8>,
     );
 
+    /// Returns the number of votes required in order for a voter to become a proposer.
     fn _proposal_threshold(&self) -> u64;
 
+    /// Returns Delay, in number of blocks, between the proposal is created and the vote starts.
+    /// This can be increassed to leave time for users to buy voting power, or delegate it, before
+    /// the voting of a proposal starts.
     fn _voting_delay(&self) -> u32;
 
+    /// Returns Delay, in number of blocks, between the vote start and vote ends.
+    ///
+    /// Note: The votingDelay can delay the start of the vote. This must be considered when setting
+    /// the voting duration compared to the voting delay.
     fn _voting_period(&self) -> u32;
 
     fn _hash_proposal(&self, proposal: &Proposal, description_hash: &Hash) -> ProposalId;
@@ -679,6 +675,11 @@ where
         let weight = self
             .data()
             ._get_votes(account, propoposal_core.vote_start, params)?;
+
+        match self.state(*proposal_id)? {
+            ProposalState::Active => {}
+            _ => return Err(GovernorError::ProposalNotActive),
+        }
 
         self.data()
             ._count_vote(proposal_id, account, support, weight, params);

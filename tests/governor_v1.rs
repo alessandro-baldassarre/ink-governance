@@ -98,7 +98,7 @@ pub mod governor {
     // Override the internal methods
     impl governor::Internal for GovernorStruct {
         fn _voting_delay(&self) -> u32 {
-            1 // 1 block
+            1
         }
         fn _voting_period(&self) -> u32 {
             50400 // 1 week
@@ -323,7 +323,7 @@ pub mod governor {
         }
 
         #[ink::test]
-        /// Propose
+        /// Propose works correctly
         fn propose_works() {
             let accounts = default_accounts();
             let mut contract = build_contract();
@@ -345,14 +345,59 @@ pub mod governor {
             )
             .unwrap();
             let proposal_id = contract.hash_proposal(proposal.clone(), description_hash);
-            let response = contract.propose(proposal, description).unwrap();
+            let response = contract
+                .propose(proposal.clone(), description.clone())
+                .unwrap();
             assert_eq!(response, proposal_id);
+
+            let emittend_events = ink::env::test::recorded_events().collect::<Vec<_>>();
+            let decoded_events = decode_events(emittend_events);
+            if let Event::ProposalCreated(ProposalCreated {
+                proposer,
+                proposal_id: prop_id,
+                proposal: prop,
+                start_block,
+                end_block,
+                description: des,
+            }) = &decoded_events[0]
+            {
+                assert_eq!(proposer, &accounts.bob);
+                assert_eq!(prop_id, &proposal_id);
+                assert_eq!(prop, &proposal);
+                assert_eq!(start_block, &1);
+                assert_eq!(end_block, &50401);
+                assert_eq!(des, &description);
+            } else {
+                panic!("encountered unexpected event kind: expected a ProposalCreated event")
+            }
 
             // In this case it is right that the proposal remains pending because since the number of blocks does not increase,
             // the proposal does not even start
             let proposal_state = ProposalState::Pending;
             let response = contract.state(proposal_id).unwrap();
             assert_eq!(response, proposal_state);
+        }
+
+        #[ink::test]
+        /// Cast vote works correctly
+        fn cast_vote_works() {
+            let accounts = default_accounts();
+            let mut contract = build_contract();
+
+            set_caller(accounts.bob);
+            let proposal = Proposal::default();
+            let description = String::from("Test proposal");
+            let proposal_id = contract.propose(proposal, description).unwrap();
+
+            // In this case charlie is not part of the group and therefore cannot vote on the proposal
+            set_caller(accounts.charlie);
+            let response = contract.cast_vote(proposal_id, 1).unwrap_err();
+            assert_eq!(response, GovernorError::NoVotes);
+
+            // In this case alice is part of the group but the proposal is not yet active (see test propose_works())
+            set_caller(accounts.alice);
+            let response = contract.cast_vote(proposal_id, 1).unwrap_err();
+            assert_eq!(response, GovernorError::ProposalNotActive);
         }
     }
 }
