@@ -1,7 +1,6 @@
 mod counting;
 mod counting_simple;
 mod governor;
-mod voting;
 mod voting_group;
 
 pub use counting::CountingError;

@@ -1,9 +1,6 @@
-use ink::prelude::vec::Vec;
 use openbrush::traits::AccountId;
 
-use crate::traits::errors::CountingError;
-
-use super::ProposalId;
+use crate::{governor::ProposalId, traits::errors::CountingError};
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Counting);
 
@@ -29,6 +26,6 @@ pub trait Counter {
         account: &AccountId,
         support: u8,
         weight: u64,
-        params: &Vec<u8>,
+        params: &[u8],
     ) -> Result<(), CountingError>;
 }

@@ -1,11 +1,9 @@
-pub use crate::governor_counting_simple;
-pub use crate::governor_counting_simple::Internal as _;
+pub use crate::governance::modules::governor_counting_simple;
+pub use crate::governance::modules::governor_counting_simple::Internal as _;
 pub use crate::traits::governance::modules::counting_simple::*;
 
 use crate::{
-    governance::governor,
-    governance::governor::counter,
-    governor::{voter, Data},
+    governance::{counter, governor::*, voter},
     traits::errors::{CountingError, CountingSimpleError},
 };
 use openbrush::{
@@ -13,12 +11,7 @@ use openbrush::{
     traits::{AccountId, OccupiedStorage, Storage, String},
 };
 
-use ink::{
-    prelude::vec::Vec,
-    storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint},
-};
-
-use self::governor::ProposalId;
+use ink::storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint};
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Counting);
 
@@ -53,7 +46,7 @@ impl counter::Counter for Counting {
         account: &AccountId,
         support: u8,
         weight: u64,
-        _params: &Vec<u8>,
+        _params: &[u8],
     ) -> Result<(), CountingError> {
         let mut proposal_votes: ProposalVote = Default::default();
         if let Some(proposal) = self.proposal_votes.get(proposal_id) {
@@ -140,9 +133,9 @@ impl Internal for Counting {
 
     fn _has_voted(&self, account: AccountId, proposal_id: ProposalId) -> bool {
         if let Some(vote) = self.has_voted.get(&(account, proposal_id)) {
-            return vote;
+            vote
         } else {
-            return false;
+            false
         }
     }
 
@@ -151,9 +144,9 @@ impl Internal for Counting {
         proposal_id: &ProposalId,
     ) -> Result<ProposalVote, CountingSimpleError> {
         if let Some(proposal_vote) = self.proposal_votes.get(proposal_id) {
-            return Ok(proposal_vote);
+            Ok(proposal_vote)
         } else {
-            return Err(CountingSimpleError::NoProposal);
+            Err(CountingSimpleError::NoProposal)
         }
     }
 }

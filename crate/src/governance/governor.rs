@@ -1,10 +1,7 @@
 pub use crate::governor::Internal as _;
 pub use crate::{governor, traits::governance::*};
 
-use crate::governor::counter;
-use crate::governor::voter;
-
-use ink::prelude::vec::Vec;
+use crate::governance::{counter, voter};
 
 use ink::{
     env::{
@@ -12,11 +9,11 @@ use ink::{
         hash::Blake2x256,
         CallFlags, DefaultEnvironment, Gas,
     },
-    prelude::collections::vec_deque::VecDeque,
+    prelude::{collections::vec_deque::VecDeque, vec::Vec},
     storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint},
 };
-use openbrush::modifier_definition;
 use openbrush::{
+    modifier_definition,
     storage::Mapping,
     traits::{AccountId, BlockNumber, Hash, OccupiedStorage, Storage, String},
 };
@@ -197,7 +194,7 @@ where
             return Err(GovernorError::EmptyProposal);
         }
 
-        if !self.data().proposals.get(&proposal_id).is_none() {
+        if self.data().proposals.get(&proposal_id).is_some() {
             return Err(GovernorError::ProposalAlreadyExist);
         }
 
@@ -390,7 +387,7 @@ pub trait Internal {
         &self,
         account: &AccountId,
         block_number: BlockNumber,
-        params: &Vec<u8>,
+        params: &[u8],
     ) -> Result<u64, GovernorError>;
 
     /// Register a vote for proposalId by account with a given support, voting weight and voting params.
@@ -402,7 +399,7 @@ pub trait Internal {
         account: &AccountId,
         support: u8,
         weight: u64,
-        params: &Vec<u8>,
+        params: &[u8],
     );
 
     /// Default additional encoded parameters used by castVote methods that don’t include them
@@ -456,7 +453,7 @@ pub trait Internal {
         account: &AccountId,
         support: u8,
         reason: &String,
-        params: &Vec<u8>,
+        params: &[u8],
     ) -> Result<u64, GovernorError>;
 
     /// Address through which the governor executes action. Will be overloaded by module that execute actions through another contract such as a timelock.
@@ -547,7 +544,7 @@ where
         &self,
         account: &AccountId,
         block_number: BlockNumber,
-        params: &Vec<u8>,
+        params: &[u8],
     ) -> Result<u64, GovernorError> {
         if let Some(votes) = self
             .data()
@@ -566,7 +563,7 @@ where
         account: &AccountId,
         support: u8,
         weight: u64,
-        params: &Vec<u8>,
+        params: &[u8],
     ) {
         self.data()
             .counting_module
@@ -609,18 +606,17 @@ where
     }
 
     default fn _before_execute(&mut self, proposal: &Proposal) -> Result<(), GovernorError> {
-        if self._executor() != Self::env().caller() {
+        if self._executor() != Self::env().account_id() {
             self.data().governance_call.push_back(proposal.selector);
         }
         Ok(())
     }
 
     default fn _after_execute(&mut self) -> Result<(), GovernorError> {
-        if self._executor() != Self::env().caller() {
-            if !self.data().governance_call.is_empty() {
-                self.data().governance_call.clear();
-            }
+        if self._executor() != Self::env().account_id() && !self.data().governance_call.is_empty() {
+            self.data().governance_call.clear();
         }
+
         Ok(())
     }
 
@@ -674,7 +670,7 @@ where
         account: &AccountId,
         support: u8,
         reason: &String,
-        params: &Vec<u8>,
+        params: &[u8],
     ) -> Result<u64, GovernorError> {
         let propoposal_core = self
             .data()
@@ -689,7 +685,7 @@ where
         self.data()
             ._count_vote(proposal_id, account, support, weight, params);
 
-        if params.len() == 0 {
+        if params.is_empty() {
             self.data()
                 ._emit_vote_cast(*account, *proposal_id, support, weight, reason.to_vec());
         } else {

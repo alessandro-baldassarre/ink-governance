@@ -1,16 +1,18 @@
 #[openbrush::contract]
 pub mod governor {
 
-    use ink::prelude::vec::Vec;
-    use ink_governance::governor::governor::*;
-    use ink_governance::governor::modules::{
-        governor_counting_simple::*, governor_voting_group::*,
+    use ink::{
+        codegen::{EmitEvent, Env},
+        prelude::vec::Vec,
     };
-    use ink_governance::traits::errors::VotingGroupError;
-    use openbrush::contracts::access_control::access_control;
-    use openbrush::traits::{Storage, String};
-
-    use ink::codegen::{EmitEvent, Env};
+    use ink_governance::{
+        governor::*, governor_counting_simple::*, governor_voting_group::*,
+        traits::errors::VotingGroupError,
+    };
+    use openbrush::{
+        contracts::access_control::access_control,
+        traits::{Storage, String},
+    };
 
     /// Emitted when a proposal is create
     #[ink(event)]

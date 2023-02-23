@@ -1,4 +1,3 @@
-use ink::prelude::vec::Vec;
 use openbrush::traits::{AccountId, BlockNumber};
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
@@ -15,6 +14,6 @@ pub trait Voter {
         &self,
         account: &AccountId,
         block_number: BlockNumber,
-        params: &Vec<u8>,
+        params: &[u8],
     ) -> Option<u64>;
 }

@@ -1,13 +1,12 @@
-pub use crate::governor_voting_group;
-pub use crate::governor_voting_group::Internal as _;
-use crate::traits::errors::VotingGroupError;
+pub use crate::governance::modules::governor_voting_group;
+pub use crate::governance::modules::governor_voting_group::Internal as _;
 pub use crate::traits::governance::modules::voting_group::*;
 
-use crate::governance::governor::voter;
+use crate::{
+    governance::{counter, governor::*, voter},
+    traits::errors::VotingGroupError,
+};
 
-use crate::governor::*;
-
-use crate::governor::counter;
 use openbrush::contracts::access_control::DEFAULT_ADMIN_ROLE;
 use openbrush::modifiers;
 use openbrush::{
@@ -35,7 +34,7 @@ impl voter::Voter for Voting {
         &self,
         account: &AccountId,
         _block_number: BlockNumber,
-        _params: &Vec<u8>,
+        _params: &[u8],
     ) -> Option<u64> {
         self.members.get(account)
     }
@@ -133,7 +132,7 @@ pub trait Internal {
 
 impl Internal for Voting {
     fn _add_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError> {
-        if !self.members.get(&member.account).is_none() {
+        if self.members.get(&member.account).is_some() {
             return Err(VotingGroupError::DuplicatedMember {
                 member: member.account,
             });
