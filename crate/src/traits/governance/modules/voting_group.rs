@@ -37,7 +37,7 @@ pub trait VotingGroup {
     fn update_members(
         &mut self,
         members: Vec<VotingMember>,
-        members_to_remove: Vec<VotingMember>,
+        members_to_remove: Vec<AccountId>,
     ) -> Result<(), VotingGroupError>;
 
     /// Returns the info of one or more voter members

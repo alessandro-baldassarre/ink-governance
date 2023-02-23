@@ -1,11 +1,8 @@
 pub use crate::governance::modules::governor_voting_group;
 pub use crate::governance::modules::governor_voting_group::Internal as _;
-pub use crate::traits::governance::modules::voting_group::*;
+pub use crate::traits::{errors::VotingGroupError, governance::modules::voting_group::*};
 
-use crate::{
-    governance::{counter, governor::*, voter},
-    traits::errors::VotingGroupError,
-};
+use crate::governance::{counter, governor::*, voter};
 
 use openbrush::contracts::access_control::DEFAULT_ADMIN_ROLE;
 use openbrush::modifiers;
@@ -65,7 +62,7 @@ where
     default fn update_members(
         &mut self,
         members: Vec<VotingMember>,
-        members_to_remove: Vec<VotingMember>,
+        members_to_remove: Vec<AccountId>,
     ) -> Result<(), VotingGroupError> {
         if !members.is_empty() {
             validate_unique_members(&members)?;
@@ -103,27 +100,27 @@ where
         &self,
         members: Vec<AccountId>,
     ) -> Result<Vec<VotingMember>, VotingGroupError> {
-        let members: Vec<VotingMember> = members
+        let members_result: Result<Vec<VotingMember>, VotingGroupError> = members
             .into_iter()
-            .map(|member| {
+            .map(|member| -> Result<VotingMember, VotingGroupError> {
                 let voting_power = self
                     .data::<Data<C, V>>()
                     .voting_module
-                    ._get_member(&member)
-                    .unwrap();
-                VotingMember {
+                    ._get_member(&member)?;
+                Ok(VotingMember {
                     account: member,
                     voting_power,
-                }
+                })
             })
             .collect();
+        let members = members_result?;
         Ok(members)
     }
 }
 pub trait Internal {
     fn _add_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError>;
 
-    fn _remove_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError>;
+    fn _remove_member(&mut self, member: &AccountId) -> Result<(), VotingGroupError>;
 
     fn _update_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError>;
 
@@ -142,9 +139,9 @@ impl Internal for Voting {
         Ok(())
     }
 
-    fn _remove_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError> {
-        self._get_member(&member.account)?;
-        self.members.remove(&member.account);
+    fn _remove_member(&mut self, member: &AccountId) -> Result<(), VotingGroupError> {
+        self._get_member(member)?;
+        self.members.remove(member);
         Ok(())
     }
 

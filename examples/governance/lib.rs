@@ -4,12 +4,11 @@
 #[openbrush::contract]
 pub mod my_governor {
     use ink::prelude::vec::Vec;
-    use ink_governance::{
-        governor::*, governor_counting_simple::*, governor_voting_group::*,
-        traits::errors::VotingGroupError,
+    use ink_governance::{governor::*, governor_counting_simple::*, governor_voting_group::*};
+    use openbrush::{
+        contracts::access_control::access_control,
+        traits::{Storage, String},
     };
-    use openbrush::contracts::access_control::access_control;
-    use openbrush::traits::{Storage, String};
 
     #[ink(storage)]
     #[derive(Default, Storage)]

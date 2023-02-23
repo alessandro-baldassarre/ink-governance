@@ -1,11 +1,11 @@
 pub use crate::governance::modules::governor_counting_simple;
 pub use crate::governance::modules::governor_counting_simple::Internal as _;
-pub use crate::traits::governance::modules::counting_simple::*;
-
-use crate::{
-    governance::{counter, governor::*, voter},
-    traits::errors::{CountingError, CountingSimpleError},
+pub use crate::traits::{
+    errors::{CountingError, CountingSimpleError},
+    governance::modules::counting_simple::*,
 };
+
+use crate::governance::{counter, governor::*, voter};
 use openbrush::{
     storage::Mapping,
     traits::{AccountId, OccupiedStorage, Storage, String},

@@ -5,10 +5,7 @@ pub mod governor {
         codegen::{EmitEvent, Env},
         prelude::vec::Vec,
     };
-    use ink_governance::{
-        governor::*, governor_counting_simple::*, governor_voting_group::*,
-        traits::errors::VotingGroupError,
-    };
+    use ink_governance::{governor::*, governor_counting_simple::*, governor_voting_group::*};
     use openbrush::{
         contracts::access_control::access_control,
         traits::{Storage, String},
@@ -174,8 +171,11 @@ pub mod governor {
     }
 
     impl From<VotingGroupError> for ContractError {
-        fn from(_voting: VotingGroupError) -> Self {
-            ContractError::Custom(String::from("VG: error from VotingGroup"))
+        fn from(voting: VotingGroupError) -> Self {
+            match voting {
+                VotingGroupError::NoMember => ContractError::Custom(String::from("VG: NoMember")),
+                _ => ContractError::Custom(String::from("VG: VotingGroupError")),
+            }
         }
     }
 
@@ -214,6 +214,7 @@ pub mod governor {
         use super::*;
         use ink::env::test::{DefaultAccounts, EmittedEvent};
         use ink::env::DefaultEnvironment;
+        use openbrush::contracts::access_control::AccessControlError;
         use openbrush::test_utils::{accounts, change_caller};
 
         type Event = <GovernorStruct as ::ink::reflect::ContractEventBase>::Type;
@@ -238,9 +239,9 @@ pub mod governor {
                 voting_power: 1,
             };
 
-            let init_members = vec![alice_member.clone(), bob_member];
+            let init_members = vec![alice_member, bob_member];
 
-            set_caller(alice_member.account);
+            set_caller(accounts.alice);
 
             GovernorStruct::new(None, init_members).unwrap()
         }
@@ -263,6 +264,24 @@ pub mod governor {
                 account: accounts.alice,
                 voting_power: 1,
             };
+            let contract = build_contract();
+
+            let response = contract.get_members(vec![accounts.alice]).unwrap();
+            assert_eq!(response, vec![alice_member]);
+
+            let err_response = contract.get_members(vec![accounts.charlie]).unwrap_err();
+            assert_eq!(err_response, VotingGroupError::NoMember);
+        }
+
+        #[ink::test]
+        /// The update_members method works correctly
+        fn update_members_works() {
+            let accounts = default_accounts();
+
+            let alice_member = VotingMember {
+                account: accounts.alice,
+                voting_power: 1,
+            };
             let bob_member = VotingMember {
                 account: accounts.bob,
                 voting_power: 1,
@@ -271,13 +290,38 @@ pub mod governor {
                 account: accounts.charlie,
                 voting_power: 1,
             };
-            let members = vec![alice_member.clone(), bob_member];
-            let contract = build_contract();
+            let members = vec![alice_member.clone(), bob_member.clone()];
+            let mut contract = build_contract();
+
+            set_caller(accounts.bob);
+
+            let err_response = contract.update_members(members, vec![]).unwrap_err();
 
             assert_eq!(
-                contract.get_members(vec![alice_member.account]).unwrap(),
-                vec![alice_member]
+                err_response,
+                VotingGroupError::AccessControlError(AccessControlError::MissingRole)
             );
+
+            set_caller(accounts.alice);
+
+            contract
+                .update_members(vec![charlie_member.clone()], vec![])
+                .unwrap();
+
+            let response = contract.get_members(vec![accounts.charlie]).unwrap();
+
+            assert!(response.contains(&charlie_member));
+
+            contract
+                .update_members(vec![], vec![accounts.charlie])
+                .unwrap();
+
+            let err_response = contract.get_members(vec![accounts.charlie]).unwrap_err();
+            assert_eq!(err_response, VotingGroupError::NoMember);
         }
+
+        #[ink::test]
+        /// Propose
+        fn propose_works() {}
     }
 }
