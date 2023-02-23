@@ -116,10 +116,6 @@ where
 
         let snapshot = self.proposal_snapshot(proposal_id)?;
 
-        if snapshot == 0 {
-            return Err(GovernorError::ProposalNotFound);
-        }
-
         if snapshot >= Self::env().block_number() {
             return Ok(ProposalState::Pending);
         }
@@ -180,8 +176,10 @@ where
         proposal: Proposal,
         description: String,
     ) -> Result<ProposalId, GovernorError> {
-        if self.get_votes(Self::env().caller(), Self::env().block_number() - 1)?
-            <= self.proposal_threshold()
+        if self.get_votes(
+            Self::env().caller(),
+            Self::env().block_number().checked_sub(1).unwrap_or(0),
+        )? <= self.proposal_threshold()
         {
             return Err(GovernorError::BelowThreshold);
         }
@@ -190,7 +188,7 @@ where
             Hash::try_from(Self::env().hash_bytes::<Blake2x256>(&description).as_ref()).unwrap();
         let proposal_id = self._hash_proposal(&proposal, &description_hash);
 
-        if proposal.selector.is_empty() && proposal.description.is_empty() {
+        if proposal.selector.is_empty() && description.is_empty() {
             return Err(GovernorError::EmptyProposal);
         }
 
@@ -554,7 +552,7 @@ where
             return Ok(votes);
         }
 
-        Err(GovernorError::Custom(String::from("No account")))
+        Err(GovernorError::NoVotes)
     }
 
     default fn _count_vote(

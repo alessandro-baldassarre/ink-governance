@@ -30,8 +30,6 @@ pub struct Proposal {
     pub input: Vec<u8>,
     /// The amount of chain balance that is transferred to the callee.
     pub transferred_value: Balance,
-    /// Description of the proposal,
-    pub description: String,
 }
 
 impl Default for Proposal {
@@ -41,7 +39,6 @@ impl Default for Proposal {
             selector: Default::default(),
             input: Default::default(),
             transferred_value: Default::default(),
-            description: Default::default(),
         }
     }
 }

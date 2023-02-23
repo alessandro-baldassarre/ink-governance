@@ -212,10 +212,12 @@ pub mod governor {
     #[cfg(test)]
     mod tests {
         use super::*;
+        use ink::env::hash::Blake2x256;
         use ink::env::test::{DefaultAccounts, EmittedEvent};
         use ink::env::DefaultEnvironment;
         use openbrush::contracts::access_control::AccessControlError;
         use openbrush::test_utils::{accounts, change_caller};
+        use openbrush::traits::Hash;
 
         type Event = <GovernorStruct as ::ink::reflect::ContractEventBase>::Type;
 
@@ -322,6 +324,35 @@ pub mod governor {
 
         #[ink::test]
         /// Propose
-        fn propose_works() {}
+        fn propose_works() {
+            let accounts = default_accounts();
+            let mut contract = build_contract();
+
+            set_caller(accounts.charlie);
+            let err_response = contract
+                .propose(Proposal::default(), String::from(""))
+                .unwrap_err();
+            assert_eq!(err_response, GovernorError::NoVotes);
+
+            set_caller(accounts.bob);
+            let proposal = Proposal::default();
+            let description = String::from("Test proposal");
+            let description_hash = Hash::try_from(
+                contract
+                    .env()
+                    .hash_bytes::<Blake2x256>(&description)
+                    .as_ref(),
+            )
+            .unwrap();
+            let proposal_id = contract.hash_proposal(proposal.clone(), description_hash);
+            let response = contract.propose(proposal, description).unwrap();
+            assert_eq!(response, proposal_id);
+
+            // In this case it is right that the proposal remains pending because since the number of blocks does not increase,
+            // the proposal does not even start
+            let proposal_state = ProposalState::Pending;
+            let response = contract.state(proposal_id).unwrap();
+            assert_eq!(response, proposal_state);
+        }
     }
 }

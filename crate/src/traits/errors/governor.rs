@@ -30,6 +30,8 @@ pub enum GovernorError {
     ProposalNotActive,
     /// Returned if the function was not passed through governance proposal
     OnlyGovernance,
+    /// Returned if the votes for that account was not found.
+    NoVotes,
 }
 
 impl From<AccessControlError> for GovernorError {
