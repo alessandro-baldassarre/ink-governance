@@ -88,6 +88,24 @@ where
 }
 
 pub trait Internal {
+    fn _emit_voting_delay_set(
+        &self,
+        _old_voting_delay: BlockNumber,
+        _new_voting_delay: BlockNumber,
+    );
+
+    fn _emit_voting_period_set(
+        &self,
+        _old_voting_period: BlockNumber,
+        _new_voting_period: BlockNumber,
+    );
+
+    fn _emit_proposal_threshold_set(
+        &self,
+        _old_proposal_threshold: u64,
+        _new_proposal_threshold: u64,
+    );
+
     fn _init_with_settings(
         &mut self,
         voting_delay: BlockNumber,
@@ -103,6 +121,27 @@ pub trait Internal {
 }
 
 impl<T: Storage<Data>> Internal for T {
+    default fn _emit_voting_delay_set(
+        &self,
+        _old_voting_delay: BlockNumber,
+        _new_voting_delay: BlockNumber,
+    ) {
+    }
+
+    default fn _emit_voting_period_set(
+        &self,
+        _old_voting_period: BlockNumber,
+        _new_voting_period: BlockNumber,
+    ) {
+    }
+
+    default fn _emit_proposal_threshold_set(
+        &self,
+        _old_proposal_threshold: u64,
+        _new_proposal_threshold: u64,
+    ) {
+    }
+
     default fn _init_with_settings(
         &mut self,
         voting_delay: BlockNumber,
@@ -115,14 +154,23 @@ impl<T: Storage<Data>> Internal for T {
     }
 
     default fn _set_voting_delay(&mut self, new_voting_delay: BlockNumber) {
+        let old_voting_delay = self.data().voting_delay;
+        self._emit_voting_delay_set(old_voting_delay, new_voting_delay);
+
         self.data().voting_delay = new_voting_delay;
     }
 
     default fn _set_voting_period(&mut self, new_voting_period: BlockNumber) {
+        let old_voting_period = self.data().voting_period;
+        self._emit_voting_period_set(old_voting_period, new_voting_period);
+
         self.data().voting_period = new_voting_period;
     }
 
     default fn _set_proposal_threshold(&mut self, new_proposal_threshold: u64) {
+        let old_proposal_threshold = self.data().proposal_threshold;
+        self._emit_proposal_threshold_set(old_proposal_threshold, new_proposal_threshold);
+
         self.data().proposal_threshold = new_proposal_threshold;
     }
 }
