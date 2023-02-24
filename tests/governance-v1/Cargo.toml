@@ -10,7 +10,7 @@ keywords      = ["blockchain", "polkadot", "ink"]
 
 [lib]
 name = "governance_v1"
-path = "lib.rs"
+path = "contract.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
