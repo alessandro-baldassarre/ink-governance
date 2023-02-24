@@ -93,6 +93,33 @@ pub mod governance_v1 {
         pub params: Vec<u8>,
     }
 
+    /// Emitted when a new voting delay is set
+    #[ink(event)]
+    pub struct VotingDelaySet {
+        /// The old voting delay.
+        pub old_voting_delay: BlockNumber,
+        /// The new voting delay.
+        pub new_voting_delay: BlockNumber,
+    }
+
+    /// Emitted when a new voting period is set
+    #[ink(event)]
+    pub struct VotingPeriodSet {
+        /// The old voting period.
+        pub old_voting_period: BlockNumber,
+        /// The new voting period.
+        pub new_voting_period: BlockNumber,
+    }
+
+    /// Emitted when a new proposal threshold is set
+    #[ink(event)]
+    pub struct ProposalThresholdSet {
+        /// The old proposal threshold.
+        pub old_proposal_threshold: u64,
+        /// The new proposal threshold.
+        pub new_proposal_threshold: u64,
+    }
+
     #[ink(storage)]
     #[derive(Default, Storage)]
     pub struct GovernorStruct {
@@ -183,6 +210,39 @@ pub mod governance_v1 {
         }
         fn _emit_proposal_executed(&self, proposal_id: ProposalId) {
             self.env().emit_event(ProposalExecuted { proposal_id })
+        }
+    }
+
+    impl governor_settings::Internal for GovernorStruct {
+        fn _emit_voting_delay_set(
+            &self,
+            old_voting_delay: openbrush::traits::BlockNumber,
+            new_voting_delay: openbrush::traits::BlockNumber,
+        ) {
+            self.env().emit_event(VotingDelaySet {
+                old_voting_delay,
+                new_voting_delay,
+            })
+        }
+        fn _emit_voting_period_set(
+            &self,
+            old_voting_period: openbrush::traits::BlockNumber,
+            new_voting_period: openbrush::traits::BlockNumber,
+        ) {
+            self.env().emit_event(VotingPeriodSet {
+                old_voting_period,
+                new_voting_period,
+            })
+        }
+        fn _emit_proposal_threshold_set(
+            &self,
+            old_proposal_threshold: u64,
+            new_proposal_threshold: u64,
+        ) {
+            self.env().emit_event(ProposalThresholdSet {
+                old_proposal_threshold,
+                new_proposal_threshold,
+            })
         }
     }
 

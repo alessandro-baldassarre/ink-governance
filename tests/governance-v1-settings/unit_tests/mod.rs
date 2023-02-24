@@ -28,6 +28,7 @@ use openbrush::{
 use ink_governance::{
     governor::*,
     governor_counting_simple::*,
+    governor_settings::*,
     governor_voting_group::*,
 };
 
@@ -185,7 +186,7 @@ fn propose_works() {
         start_block,
         end_block,
         description: des,
-    }) = &decoded_events[0]
+    }) = &decoded_events[3]
     {
         assert_eq!(proposer, &accounts.bob);
         assert_eq!(prop_id, &proposal_id);
@@ -287,4 +288,48 @@ fn proposal_threshold_works() {
     let contract = build_contract();
     let response = contract.proposal_threshold();
     assert_eq!(response, 0);
+}
+
+#[ink::test]
+fn set_voting_delay_works() {
+    let mut contract = build_contract();
+    // In this case since we are in an off-chain envoriment, the modifier only_governance is not applied
+    // and so we can set new delay without a passed proposal.
+    contract.set_voting_delay(2).unwrap();
+    let response = contract.voting_delay();
+    assert_eq!(response, 2);
+    let emittend_events = ink::env::test::recorded_events().collect::<Vec<_>>();
+    let decoded_events = decode_events(emittend_events);
+    if let Event::VotingDelaySet(VotingDelaySet {
+        old_voting_delay,
+        new_voting_delay,
+    }) = &decoded_events[3]
+    {
+        assert_eq!(old_voting_delay, &0);
+        assert_eq!(new_voting_delay, &2);
+    } else {
+        panic!("encountered unexpected event kind: expected a VotingDelaySet event")
+    }
+}
+
+#[ink::test]
+fn set_voting_period_works() {
+    let mut contract = build_contract();
+    // In this case since we are in an off-chain envoriment, the modifier only_governance is not applied
+    // and so we can set new delay without a passed proposal.
+    contract.set_voting_period(9).unwrap();
+    let response = contract.voting_period();
+    assert_eq!(response, 9);
+    let emittend_events = ink::env::test::recorded_events().collect::<Vec<_>>();
+    let decoded_events = decode_events(emittend_events);
+    if let Event::VotingPeriodSet(VotingPeriodSet {
+        old_voting_period,
+        new_voting_period,
+    }) = &decoded_events[3]
+    {
+        assert_eq!(old_voting_period, &50400);
+        assert_eq!(new_voting_period, &9);
+    } else {
+        panic!("encountered unexpected event kind: expected a VotingDelaySet event")
+    }
 }
