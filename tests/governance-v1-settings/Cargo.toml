@@ -1,5 +1,5 @@
 [package]
-name          = "ink-governance"
+name          = "governance_v1_settings"
 version       = "0.1.0"
 authors       = ["Alessandro Baldassarre <alessandro.baldassarre.dev@gmail.com>"]
 edition       = "2021"
@@ -9,30 +9,33 @@ documentation = "https://github.com/alessandro-baldassarre/ink-governance/crate#
 keywords      = ["blockchain", "polkadot", "ink"]
 
 [lib]
-name = "ink_governance"
-path = "src/lib.rs"
-crate-type = ["rlib"]
+name = "governance_v1_settings"
+path = "contract.rs"
+crate-type = ["cdylib"]
 
 [dependencies]
+
 ink        = { version = "4.0.0", default-features = false }
 openbrush  = { git = "https://github.com/727-Ventures/openbrush-contracts", default-features = false, features = ["access_control"] }
 scale      = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.3.1", default-features = false, features = ["derive"], optional = true }
 
+ink-governance = { path = "../../crate/", default-features = false, features = ["governor_v1", "governor_settings"] }
+
+[dev-dependencies]
+ink_e2e = { version = "4.0.0" } 
+
 [features]
 default = ["std"]
 std = [
     "ink/std",
-    "openbrush/std",
     "scale/std",
     "scale-info/std",
+    # These dependencies
+    "openbrush/std",
+    "ink-governance/std"
 ]
 
-governor = []
-governor_settings = []
-governor_counting_simple = []
-governor_voting_group = []
-
-governor_v1 = ["governor","governor_counting_simple","governor_voting_group"]
-
+ink-as-dependency = []
+e2e-tests = []
 
