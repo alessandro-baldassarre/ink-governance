@@ -13,7 +13,7 @@ jobs:
           components: rustfmt
 
       - name: Rustfmt check
-        run: cargo fmt +nightly --all -- --check
+        run: cargo fmt --all -- --check
   unit-test:
     runs-on: ubuntu-latest
     steps:
