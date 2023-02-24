@@ -1,4 +1,7 @@
-use openbrush::traits::{AccountId, ZERO_ADDRESS};
+use openbrush::traits::{
+    AccountId,
+    ZERO_ADDRESS,
+};
 
 use ink::prelude::vec::Vec;
 
@@ -42,5 +45,8 @@ pub trait VotingGroup {
 
     /// Returns the info of one or more voter members
     #[ink(message)]
-    fn get_members(&self, members: Vec<AccountId>) -> Result<Vec<VotingMember>, VotingGroupError>;
+    fn get_members(
+        &self,
+        members: Vec<AccountId>,
+    ) -> Result<Vec<VotingMember>, VotingGroupError>;
 }

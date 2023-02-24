@@ -1,9 +1,16 @@
 use openbrush::{
     contracts::{
         access_control::AccessControlError,
-        traits::{errors::ReentrancyGuardError, pausable::PausableError, proxy::OwnableError},
+        traits::{
+            errors::ReentrancyGuardError,
+            pausable::PausableError,
+            proxy::OwnableError,
+        },
     },
-    traits::{AccountId, String},
+    traits::{
+        AccountId,
+        String,
+    },
 };
 
 use super::GovernorError;
@@ -60,7 +67,9 @@ impl From<PausableError> for VotingGroupError {
     fn from(pausable: PausableError) -> Self {
         match pausable {
             PausableError::Paused => VotingGroupError::Custom(String::from("P::Paused")),
-            PausableError::NotPaused => VotingGroupError::Custom(String::from("P::NotPaused")),
+            PausableError::NotPaused => {
+                VotingGroupError::Custom(String::from("P::NotPaused"))
+            }
         }
     }
 }

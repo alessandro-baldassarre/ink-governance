@@ -1,4 +1,7 @@
-use openbrush::traits::{AccountId, BlockNumber};
+use openbrush::traits::{
+    AccountId,
+    BlockNumber,
+};
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
 

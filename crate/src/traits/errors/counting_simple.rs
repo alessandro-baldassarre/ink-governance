@@ -1,7 +1,11 @@
 use openbrush::{
     contracts::{
         access_control::AccessControlError,
-        traits::{errors::ReentrancyGuardError, pausable::PausableError, proxy::OwnableError},
+        traits::{
+            errors::ReentrancyGuardError,
+            pausable::PausableError,
+            proxy::OwnableError,
+        },
     },
     traits::String,
 };
@@ -55,8 +59,12 @@ impl From<OwnableError> for CountingSimpleError {
 impl From<PausableError> for CountingSimpleError {
     fn from(pausable: PausableError) -> Self {
         match pausable {
-            PausableError::Paused => CountingSimpleError::Custom(String::from("P::Paused")),
-            PausableError::NotPaused => CountingSimpleError::Custom(String::from("P::NotPaused")),
+            PausableError::Paused => {
+                CountingSimpleError::Custom(String::from("P::Paused"))
+            }
+            PausableError::NotPaused => {
+                CountingSimpleError::Custom(String::from("P::NotPaused"))
+            }
         }
     }
 }

@@ -1,6 +1,13 @@
 pub use crate::traits::errors::GovernorError;
 use ink::prelude::vec::Vec;
-use openbrush::traits::{AccountId, Balance, BlockNumber, Hash, String, ZERO_ADDRESS};
+use openbrush::traits::{
+    AccountId,
+    Balance,
+    BlockNumber,
+    Hash,
+    String,
+    ZERO_ADDRESS,
+};
 
 /// The possible states for a proposal
 #[derive(Debug, Clone, PartialEq, scale::Encode, scale::Decode)]
@@ -58,11 +65,17 @@ pub trait Governor {
 
     /// Returns the block number used to retrieve user’s votes and quorum.
     #[ink(message)]
-    fn proposal_snapshot(&self, proposal_id: ProposalId) -> Result<BlockNumber, GovernorError>;
+    fn proposal_snapshot(
+        &self,
+        proposal_id: ProposalId,
+    ) -> Result<BlockNumber, GovernorError>;
 
     /// Returns the block number at which votes close.
     #[ink(message)]
-    fn proposal_deadline(&self, proposal_id: ProposalId) -> Result<BlockNumber, GovernorError>;
+    fn proposal_deadline(
+        &self,
+        proposal_id: ProposalId,
+    ) -> Result<BlockNumber, GovernorError>;
 
     /// A description of the possible support values for castVote and the way these votes are counted,
     /// meant to be consumed by UIs to show correct vote options and interpret the results.
@@ -115,7 +128,11 @@ pub trait Governor {
     ///
     /// Returns the weight of the vote
     #[ink(message)]
-    fn cast_vote(&mut self, proposal_id: ProposalId, support: u8) -> Result<u64, GovernorError>;
+    fn cast_vote(
+        &mut self,
+        proposal_id: ProposalId,
+        support: u8,
+    ) -> Result<u64, GovernorError>;
 
     /// Cast a vote with a reason.
     ///

@@ -1,21 +1,48 @@
-pub use crate::governor::Internal as _;
-pub use crate::{governor, traits::governance::*};
+pub use crate::{
+    governor,
+    governor::Internal as _,
+    traits::governance::*,
+};
 
-use crate::governance::{counter, voter};
+use crate::governance::{
+    counter,
+    voter,
+};
 
 use ink::{
     env::{
-        call::{build_call, Call, ExecutionInput},
+        call::{
+            build_call,
+            Call,
+            ExecutionInput,
+        },
         hash::Blake2x256,
-        CallFlags, DefaultEnvironment, Gas,
+        CallFlags,
+        DefaultEnvironment,
+        Gas,
     },
-    prelude::{collections::vec_deque::VecDeque, vec::Vec},
-    storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint},
+    prelude::{
+        collections::vec_deque::VecDeque,
+        vec::Vec,
+    },
+    storage::traits::{
+        AutoStorableHint,
+        ManualKey,
+        Storable,
+        StorableHint,
+    },
 };
 use openbrush::{
     modifier_definition,
     storage::Mapping,
-    traits::{AccountId, BlockNumber, Hash, OccupiedStorage, Storage, String},
+    traits::{
+        AccountId,
+        BlockNumber,
+        Hash,
+        OccupiedStorage,
+        Storage,
+        String,
+    },
 };
 
 /// A ProposalCore describe internal parameters for a proposal
@@ -78,7 +105,7 @@ where
     E: From<GovernorError>,
 {
     if T::env().caller() != instance.data()._executor() {
-        return Err(GovernorError::OnlyGovernance.into());
+        return Err(GovernorError::OnlyGovernance.into())
     }
 
     body(instance)
@@ -97,33 +124,40 @@ where
     T: Storage<Data<C, V>>,
     T: OccupiedStorage<STORAGE_KEY, WithData = Data<C, V>>,
 {
-    default fn hash_proposal(&self, proposal: Proposal, description_hash: Hash) -> ProposalId {
+    default fn hash_proposal(
+        &self,
+        proposal: Proposal,
+        description_hash: Hash,
+    ) -> ProposalId {
         self._hash_proposal(&proposal, &description_hash)
     }
 
-    default fn state(&self, proposal_id: ProposalId) -> Result<ProposalState, GovernorError> {
+    default fn state(
+        &self,
+        proposal_id: ProposalId,
+    ) -> Result<ProposalState, GovernorError> {
         let proposal = self
             .data()
             .proposals
             .get(&proposal_id)
             .ok_or(GovernorError::ProposalNotFound)?;
         if proposal.executed {
-            return Ok(ProposalState::Executed);
+            return Ok(ProposalState::Executed)
         }
         if proposal.canceled {
-            return Ok(ProposalState::Canceled);
+            return Ok(ProposalState::Canceled)
         }
 
         let snapshot = self.proposal_snapshot(proposal_id)?;
 
         if snapshot >= Self::env().block_number() {
-            return Ok(ProposalState::Pending);
+            return Ok(ProposalState::Pending)
         }
 
         let deadline = self.proposal_deadline(proposal_id)?;
 
         if deadline >= Self::env().block_number() {
-            return Ok(ProposalState::Active);
+            return Ok(ProposalState::Active)
         }
 
         if self._quorum_reached(&proposal_id) && self._vote_succeeded(&proposal_id) {
@@ -169,19 +203,20 @@ where
             Self::env().block_number().saturating_sub(1),
         )? <= self._proposal_threshold()
         {
-            return Err(GovernorError::BelowThreshold);
+            return Err(GovernorError::BelowThreshold)
         }
 
         let description_hash =
-            Hash::try_from(Self::env().hash_bytes::<Blake2x256>(&description).as_ref()).unwrap();
+            Hash::try_from(Self::env().hash_bytes::<Blake2x256>(&description).as_ref())
+                .unwrap();
         let proposal_id = self._hash_proposal(&proposal, &description_hash);
 
         if proposal.selector.is_empty() && description.is_empty() {
-            return Err(GovernorError::EmptyProposal);
+            return Err(GovernorError::EmptyProposal)
         }
 
         if self.data().proposals.get(&proposal_id).is_some() {
-            return Err(GovernorError::ProposalAlreadyExist);
+            return Err(GovernorError::ProposalAlreadyExist)
         }
 
         let vote_start = Self::env().block_number() + self._voting_delay();
@@ -289,7 +324,8 @@ where
         params: Vec<u8>,
     ) -> Result<u64, GovernorError> {
         let voter = Self::env().caller();
-        let votes = self._cast_vote_with_params(&proposal_id, &voter, support, &reason, &params)?;
+        let votes =
+            self._cast_vote_with_params(&proposal_id, &voter, support, &reason, &params)?;
         Ok(votes)
     }
 
@@ -304,7 +340,8 @@ where
                     .transferred_value(proposal.transferred_value),
             )
             .exec_input(
-                ExecutionInput::new(proposal.selector.into()).push_arg(CallInput(&proposal.input)),
+                ExecutionInput::new(proposal.selector.into())
+                    .push_arg(CallInput(&proposal.input)),
             )
             .returns::<()>()
             .call_flags(CallFlags::default().set_allow_reentry(true))
@@ -511,7 +548,11 @@ where
         0
     }
 
-    default fn _hash_proposal(&self, proposal: &Proposal, description_hash: &Hash) -> ProposalId {
+    default fn _hash_proposal(
+        &self,
+        proposal: &Proposal,
+        description_hash: &Hash,
+    ) -> ProposalId {
         let mut hash_data: Vec<u8> = Vec::new();
 
         hash_data.append(&mut scale::Encode::encode(&proposal));
@@ -540,12 +581,12 @@ where
         block_number: BlockNumber,
         params: &[u8],
     ) -> Result<u64, GovernorError> {
-        if let Some(votes) = self
-            .data()
-            .voting_module
-            ._get_votes(account, block_number, params)
+        if let Some(votes) =
+            self.data()
+                .voting_module
+                ._get_votes(account, block_number, params)
         {
-            return Ok(votes);
+            return Ok(votes)
         }
 
         Err(GovernorError::NoVotes)
@@ -584,7 +625,8 @@ where
                     .transferred_value(proposal.transferred_value),
             )
             .exec_input(
-                ExecutionInput::new(proposal.selector.into()).push_arg(CallInput(&proposal.input)),
+                ExecutionInput::new(proposal.selector.into())
+                    .push_arg(CallInput(&proposal.input)),
             )
             .returns::<()>()
             .call_flags(CallFlags::default().set_allow_reentry(true))
@@ -599,7 +641,10 @@ where
         Ok(())
     }
 
-    default fn _before_execute(&mut self, proposal: &Proposal) -> Result<(), GovernorError> {
+    default fn _before_execute(
+        &mut self,
+        proposal: &Proposal,
+    ) -> Result<(), GovernorError> {
         if self._executor() != Self::env().account_id() {
             self.data().governance_call.push_back(proposal.selector);
         }
@@ -607,7 +652,9 @@ where
     }
 
     default fn _after_execute(&mut self) -> Result<(), GovernorError> {
-        if self._executor() != Self::env().account_id() && !self.data().governance_call.is_empty() {
+        if self._executor() != Self::env().account_id()
+            && !self.data().governance_call.is_empty()
+        {
             self.data().governance_call.clear();
         }
 
@@ -628,9 +675,9 @@ where
             .ok_or(GovernorError::ProposalNotFound)?;
 
         match status {
-            ProposalState::Canceled | ProposalState::Expired | ProposalState::Executed => {
-                return Err(GovernorError::ProposalNotActive)
-            }
+            ProposalState::Canceled
+            | ProposalState::Expired
+            | ProposalState::Executed => return Err(GovernorError::ProposalNotActive),
             _ => {
                 proposal_core.canceled = true;
                 self.data().proposals.insert(&proposal_id, &proposal_core)
@@ -672,9 +719,9 @@ where
             .get(proposal_id)
             .ok_or(GovernorError::ProposalNotFound)?;
 
-        let weight = self
-            .data()
-            ._get_votes(account, propoposal_core.vote_start, params)?;
+        let weight =
+            self.data()
+                ._get_votes(account, propoposal_core.vote_start, params)?;
 
         match self.state(*proposal_id)? {
             ProposalState::Active => {}
@@ -685,8 +732,13 @@ where
             ._count_vote(proposal_id, account, support, weight, params);
 
         if params.is_empty() {
-            self.data()
-                ._emit_vote_cast(*account, *proposal_id, support, weight, reason.to_vec());
+            self.data()._emit_vote_cast(
+                *account,
+                *proposal_id,
+                support,
+                weight,
+                reason.to_vec(),
+            );
         } else {
             self.data()._emit_vote_cast_with_params(
                 *account,

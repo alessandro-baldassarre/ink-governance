@@ -1,7 +1,11 @@
 use openbrush::{
     contracts::{
         access_control::AccessControlError,
-        traits::{errors::ReentrancyGuardError, pausable::PausableError, proxy::OwnableError},
+        traits::{
+            errors::ReentrancyGuardError,
+            pausable::PausableError,
+            proxy::OwnableError,
+        },
     },
     traits::String,
 };
@@ -67,7 +71,9 @@ impl From<PausableError> for GovernorError {
     fn from(pausable: PausableError) -> Self {
         match pausable {
             PausableError::Paused => GovernorError::Custom(String::from("P::Paused")),
-            PausableError::NotPaused => GovernorError::Custom(String::from("P::NotPaused")),
+            PausableError::NotPaused => {
+                GovernorError::Custom(String::from("P::NotPaused"))
+            }
         }
     }
 }

@@ -1,7 +1,10 @@
 use openbrush::traits::AccountId;
 
 use crate::traits::{
-    errors::{CountingError, CountingSimpleError},
+    errors::{
+        CountingError,
+        CountingSimpleError,
+    },
     governance::ProposalId,
 };
 
@@ -58,5 +61,8 @@ pub trait CountingSimple {
 
     /// Accessor to the internal vote counts.
     #[ink(message)]
-    fn proposal_votes(&self, proposal_id: ProposalId) -> Result<ProposalVote, CountingSimpleError>;
+    fn proposal_votes(
+        &self,
+        proposal_id: ProposalId,
+    ) -> Result<ProposalVote, CountingSimpleError>;
 }

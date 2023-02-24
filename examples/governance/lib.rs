@@ -4,17 +4,27 @@
 #[openbrush::contract]
 pub mod my_governor {
     use ink::prelude::vec::Vec;
-    use ink_governance::{governor::*, governor_counting_simple::*, governor_voting_group::*};
+    use ink_governance::{
+        governor::*,
+        governor_counting_simple::*,
+        governor_voting_group::*,
+    };
     use openbrush::{
         contracts::access_control::access_control,
-        traits::{Storage, String},
+        traits::{
+            Storage,
+            String,
+        },
     };
 
     #[ink(storage)]
     #[derive(Default, Storage)]
     pub struct Contract {
         #[storage_field]
-        governor: governor::Data<governor_counting_simple::Counting, governor_voting_group::Voting>,
+        governor: governor::Data<
+            governor_counting_simple::Counting,
+            governor_voting_group::Voting,
+        >,
         #[storage_field]
         access_control: access_control::Data,
     }

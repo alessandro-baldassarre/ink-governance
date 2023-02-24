@@ -1,20 +1,43 @@
-pub use crate::governance::modules::governor_voting_group;
-pub use crate::governance::modules::governor_voting_group::Internal as _;
-pub use crate::traits::{errors::VotingGroupError, governance::modules::voting_group::*};
+pub use crate::{
+    governance::modules::{
+        governor_voting_group,
+        governor_voting_group::Internal as _,
+    },
+    traits::{
+        errors::VotingGroupError,
+        governance::modules::voting_group::*,
+    },
+};
 
-use crate::governance::{counter, governor::*, voter};
+use crate::governance::{
+    counter,
+    governor::*,
+    voter,
+};
 
-use openbrush::contracts::access_control::DEFAULT_ADMIN_ROLE;
-use openbrush::modifiers;
 use openbrush::{
-    contracts::access_control::access_control,
+    contracts::access_control::{
+        access_control,
+        DEFAULT_ADMIN_ROLE,
+    },
+    modifiers,
     storage::Mapping,
-    traits::{AccountId, BlockNumber, OccupiedStorage, Storage},
+    traits::{
+        AccountId,
+        BlockNumber,
+        OccupiedStorage,
+        Storage,
+    },
 };
 
 use ink::{
     prelude::vec::Vec,
-    storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint},
+    storage::traits::{
+        AutoStorableHint,
+        ManualKey,
+        Storable,
+        StorableHint,
+    },
 };
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
@@ -49,14 +72,22 @@ where
     C: counter::Counter,
     C: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
-        + AutoStorableHint<ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>, Type = C>,
+        + AutoStorableHint<
+            ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>,
+            Type = C,
+        >,
     V: voter::Voter + Internal,
     V: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
-        + AutoStorableHint<ManualKey<3230629697, ManualKey<{ governor::STORAGE_KEY }>>, Type = V>,
+        + AutoStorableHint<
+            ManualKey<3230629697, ManualKey<{ governor::STORAGE_KEY }>>,
+            Type = V,
+        >,
     T: Storage<access_control::Data<M>> + Storage<governor::Data<C, V>>,
-    T: OccupiedStorage<{ access_control::STORAGE_KEY }, WithData = access_control::Data<M>>
-        + OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<C, V>>,
+    T: OccupiedStorage<
+            { access_control::STORAGE_KEY },
+            WithData = access_control::Data<M>,
+        > + OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<C, V>>,
 {
     #[modifiers(access_control::only_role(DEFAULT_ADMIN_ROLE))]
     default fn update_members(
@@ -132,7 +163,7 @@ impl Internal for Voting {
         if self.members.get(&member.account).is_some() {
             return Err(VotingGroupError::DuplicatedMember {
                 member: member.account,
-            });
+            })
         }
 
         self.members.insert(&member.account, &member.voting_power);
@@ -163,7 +194,7 @@ impl Internal for Voting {
 pub fn validate_unique_members(members: &[VotingMember]) -> Result<(), VotingGroupError> {
     for (a, b) in members.iter().zip(members.iter().skip(1)) {
         if a.account == b.account {
-            return Err(VotingGroupError::DuplicatedMember { member: a.account });
+            return Err(VotingGroupError::DuplicatedMember { member: a.account })
         }
     }
     Ok(())

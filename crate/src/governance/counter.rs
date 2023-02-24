@@ -1,6 +1,9 @@
 use openbrush::traits::AccountId;
 
-use crate::{governor::ProposalId, traits::errors::CountingError};
+use crate::traits::{
+    errors::CountingError,
+    governance::ProposalId,
+};
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Counting);
 

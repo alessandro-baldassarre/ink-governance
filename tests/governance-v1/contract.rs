@@ -1,14 +1,24 @@
 #[openbrush::contract]
-pub mod governor {
+pub mod governance_v1 {
 
     use ink::{
-        codegen::{EmitEvent, Env},
+        codegen::{
+            EmitEvent,
+            Env,
+        },
         prelude::vec::Vec,
     };
-    use ink_governance::{governor::*, governor_counting_simple::*, governor_voting_group::*};
+    use ink_governance::{
+        governor::*,
+        governor_counting_simple::*,
+        governor_voting_group::*,
+    };
     use openbrush::{
         contracts::access_control::access_control,
-        traits::{Storage, String},
+        traits::{
+            Storage,
+            String,
+        },
     };
 
     /// Emitted when a proposal is create
@@ -84,7 +94,10 @@ pub mod governor {
     #[derive(Default, Storage)]
     pub struct GovernorStruct {
         #[storage_field]
-        governor: governor::Data<governor_counting_simple::Counting, governor_voting_group::Voting>,
+        governor: governor::Data<
+            governor_counting_simple::Counting,
+            governor_voting_group::Voting,
+        >,
         #[storage_field]
         access_control: access_control::Data,
     }
@@ -173,7 +186,9 @@ pub mod governor {
     impl From<VotingGroupError> for ContractError {
         fn from(voting: VotingGroupError) -> Self {
             match voting {
-                VotingGroupError::NoMember => ContractError::Custom(String::from("VG: NoMember")),
+                VotingGroupError::NoMember => {
+                    ContractError::Custom(String::from("VG: NoMember"))
+                }
                 _ => ContractError::Custom(String::from("VG: VotingGroupError")),
             }
         }
@@ -212,12 +227,22 @@ pub mod governor {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use ink::env::hash::Blake2x256;
-        use ink::env::test::{DefaultAccounts, EmittedEvent};
-        use ink::env::DefaultEnvironment;
-        use openbrush::contracts::access_control::AccessControlError;
-        use openbrush::test_utils::{accounts, change_caller};
-        use openbrush::traits::Hash;
+        use ink::env::{
+            hash::Blake2x256,
+            test::{
+                DefaultAccounts,
+                EmittedEvent,
+            },
+            DefaultEnvironment,
+        };
+        use openbrush::{
+            contracts::access_control::AccessControlError,
+            test_utils::{
+                accounts,
+                change_caller,
+            },
+            traits::Hash,
+        };
 
         type Event = <GovernorStruct as ::ink::reflect::ContractEventBase>::Type;
 
@@ -252,7 +277,8 @@ pub mod governor {
             emittend_events
                 .into_iter()
                 .map(|event| {
-                    <Event as scale::Decode>::decode(&mut &event.data[..]).expect("invalid data")
+                    <Event as scale::Decode>::decode(&mut &event.data[..])
+                        .expect("invalid data")
                 })
                 .collect()
         }
@@ -368,7 +394,9 @@ pub mod governor {
                 assert_eq!(end_block, &50401);
                 assert_eq!(des, &description);
             } else {
-                panic!("encountered unexpected event kind: expected a ProposalCreated event")
+                panic!(
+                    "encountered unexpected event kind: expected a ProposalCreated event"
+                )
             }
 
             // In this case it is right that the proposal remains pending because since the number of blocks does not increase,
@@ -398,6 +426,44 @@ pub mod governor {
             set_caller(accounts.alice);
             let response = contract.cast_vote(proposal_id, 1).unwrap_err();
             assert_eq!(response, GovernorError::ProposalNotActive);
+        }
+
+        #[ink::test]
+        fn proposal_votes_works() {
+            let accounts = default_accounts();
+            let mut contract = build_contract();
+
+            set_caller(accounts.bob);
+            let proposal = Proposal::default();
+            let description = String::from("Test proposal");
+            let proposal_id = contract.propose(proposal, description).unwrap();
+
+            // In this case the proposal not have already votes casted
+            let err_response = contract.proposal_votes(proposal_id).unwrap_err();
+            assert_eq!(err_response, CountingSimpleError::NoProposal);
+        }
+    }
+
+    #[cfg(all(test, feature = "e2e-tests"))]
+    mod e2e_tests {
+        use super::*;
+        use ink_e2e::build_message;
+        type E2EResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+        #[ink_e2e::test]
+        async fn e2e_can_add_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
+            let bob_account = ink_e2e::account_id(ink_e2e::AccountKeyring::Bob);
+            let bob_member = VotingMember {
+                account: bob_account,
+                voting_power: 1,
+            };
+            let constructor = GovernorStructRef::new(None, vec![bob_member]);
+            let contract_addr = client
+                .instantiate("ink_governance_v1", &ink_e2e::alice(), constructor, 0, None)
+                .await
+                .expect("Instantiate failed")
+                .account_id;
+            Ok(())
         }
     }
 }

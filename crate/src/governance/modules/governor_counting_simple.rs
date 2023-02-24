@@ -1,17 +1,38 @@
-pub use crate::governance::modules::governor_counting_simple;
-pub use crate::governance::modules::governor_counting_simple::Internal as _;
-pub use crate::traits::{
-    errors::{CountingError, CountingSimpleError},
-    governance::modules::counting_simple::*,
+pub use crate::{
+    governance::modules::{
+        governor_counting_simple,
+        governor_counting_simple::Internal as _,
+    },
+    traits::{
+        errors::{
+            CountingError,
+            CountingSimpleError,
+        },
+        governance::modules::counting_simple::*,
+    },
 };
 
-use crate::governance::{counter, governor::*, voter};
+use crate::governance::{
+    counter,
+    governor::*,
+    voter,
+};
 use openbrush::{
     storage::Mapping,
-    traits::{AccountId, OccupiedStorage, Storage, String},
+    traits::{
+        AccountId,
+        OccupiedStorage,
+        Storage,
+        String,
+    },
 };
 
-use ink::storage::traits::{AutoStorableHint, ManualKey, Storable, StorableHint};
+use ink::storage::traits::{
+    AutoStorableHint,
+    ManualKey,
+    Storable,
+    StorableHint,
+};
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Counting);
 
@@ -24,7 +45,10 @@ pub struct Counting {
 }
 
 impl counter::Counter for Counting {
-    default fn _quorum_reached(&self, proposal_id: &ProposalId) -> Result<bool, CountingError> {
+    default fn _quorum_reached(
+        &self,
+        proposal_id: &ProposalId,
+    ) -> Result<bool, CountingError> {
         let proposal_votes = self
             .proposal_votes
             .get(proposal_id)
@@ -32,7 +56,10 @@ impl counter::Counter for Counting {
         Ok(self._quorum() <= (proposal_votes.for_votes + proposal_votes.abstain_votes))
     }
 
-    default fn _vote_succeeded(&self, proposal_id: &ProposalId) -> Result<bool, CountingError> {
+    default fn _vote_succeeded(
+        &self,
+        proposal_id: &ProposalId,
+    ) -> Result<bool, CountingError> {
         let proposal_votes = self
             .proposal_votes
             .get(proposal_id)
@@ -54,7 +81,7 @@ impl counter::Counter for Counting {
         }
         let has_voted = self._has_voted(*account, *proposal_id);
         if has_voted {
-            return Err(CountingError::VoteAlreadyCast);
+            return Err(CountingError::VoteAlreadyCast)
         }
         self.has_voted.insert(&(*account, *proposal_id), &true);
 
@@ -85,11 +112,17 @@ where
     C: counter::Counter + Internal,
     C: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
-        + AutoStorableHint<ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>, Type = C>,
+        + AutoStorableHint<
+            ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>,
+            Type = C,
+        >,
     V: voter::Voter,
     V: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
-        + AutoStorableHint<ManualKey<3230629697, ManualKey<{ governor::STORAGE_KEY }>>, Type = V>,
+        + AutoStorableHint<
+            ManualKey<3230629697, ManualKey<{ governor::STORAGE_KEY }>>,
+            Type = V,
+        >,
     T: Storage<governor::Data<C, V>>,
     T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<C, V>>,
 {
