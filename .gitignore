@@ -6,7 +6,6 @@
 
 # Build results
 target/
-artifacts/ 
 
 # IDEs
 .vscode/
