@@ -1,5 +1,5 @@
 [package]
-name          = "governance-v1"
+name          = "governance_v1"
 version       = "0.1.0"
 authors       = ["Alessandro Baldassarre <alessandro.baldassarre.dev@gmail.com>"]
 edition       = "2021"

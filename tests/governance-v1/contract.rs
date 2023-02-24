@@ -225,7 +225,7 @@ pub mod governance_v1 {
     }
 
     #[cfg(test)]
-    mod tests {
+    mod unit_tests {
         use super::*;
         use ink::env::{
             hash::Blake2x256,
