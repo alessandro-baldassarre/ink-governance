@@ -59,7 +59,7 @@ pub trait CountingSimple {
     #[ink(message)]
     fn has_voted(&self, proposal_id: ProposalId, account: AccountId) -> bool;
 
-    /// Accessor to the internal vote counts.
+    /// Returns the votes that a proposal has already received
     #[ink(message)]
     fn proposal_votes(
         &self,

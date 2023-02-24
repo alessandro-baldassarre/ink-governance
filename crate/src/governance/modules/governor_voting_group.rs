@@ -95,6 +95,10 @@ where
         members: Vec<VotingMember>,
         members_to_remove: Vec<AccountId>,
     ) -> Result<(), VotingGroupError> {
+        if members.is_empty() && members_to_remove.is_empty() {
+            return Err(VotingGroupError::ZeroMembers)
+        }
+
         if !members.is_empty() {
             validate_unique_members(&members)?;
 

@@ -69,6 +69,20 @@ fn decode_events(emittend_events: Vec<EmittedEvent>) -> Vec<Event> {
         .collect()
 }
 
+fn propose(contract: &mut GovernorStruct) -> ProposalId {
+    let accounts = default_accounts();
+
+    set_caller(accounts.bob);
+    let proposal = Proposal::default();
+    let description = String::from("Test proposal");
+    contract.propose(proposal, description).unwrap()
+}
+
+fn cast_against_vote(contract: &mut GovernorStruct, proposal_id: ProposalId) -> u64 {
+    ink::env::test::advance_block::<DefaultEnvironment>();
+    contract.cast_vote(proposal_id, 1).unwrap()
+}
+
 #[ink::test]
 /// The constructor does its job
 fn contruction_works() {
@@ -202,10 +216,7 @@ fn cast_vote_works() {
     let accounts = default_accounts();
     let mut contract = build_contract();
 
-    set_caller(accounts.bob);
-    let proposal = Proposal::default();
-    let description = String::from("Test proposal");
-    let proposal_id = contract.propose(proposal, description).unwrap();
+    let proposal_id = propose(&mut contract);
 
     // In this case charlie is not part of the group and therefore cannot vote on the proposal
     set_caller(accounts.charlie);
@@ -233,15 +244,47 @@ fn cast_vote_works() {
 
 #[ink::test]
 fn proposal_votes_works() {
-    let accounts = default_accounts();
     let mut contract = build_contract();
+    let proposal_id = propose(&mut contract);
+    cast_against_vote(&mut contract, proposal_id);
 
-    set_caller(accounts.bob);
-    let proposal = Proposal::default();
-    let description = String::from("Test proposal");
-    let proposal_id = contract.propose(proposal, description).unwrap();
+    let proposal_votes = ProposalVote {
+        against_votes: 1,
+        for_votes: 0,
+        abstain_votes: 0,
+    };
+    let response = contract.proposal_votes(proposal_id).unwrap();
+    assert_eq!(response, proposal_votes);
+}
 
-    // In this case the proposal not have already votes casted
-    let err_response = contract.proposal_votes(proposal_id).unwrap_err();
-    assert_eq!(err_response, CountingSimpleError::NoProposal);
+#[ink::test]
+fn has_voted_works() {
+    let mut contract = build_contract();
+    let accounts = default_accounts();
+    let proposal_id = propose(&mut contract);
+    cast_against_vote(&mut contract, proposal_id);
+
+    let response = contract.has_voted(proposal_id, accounts.bob);
+    assert_eq!(response, true);
+}
+
+#[ink::test]
+fn voting_delay_works() {
+    let contract = build_contract();
+    let response = contract.voting_delay();
+    assert_eq!(response, 0);
+}
+
+#[ink::test]
+fn voting_period_works() {
+    let contract = build_contract();
+    let response = contract.voting_period();
+    assert_eq!(response, 50400);
+}
+
+#[ink::test]
+fn proposal_threshold_works() {
+    let contract = build_contract();
+    let response = contract.proposal_threshold();
+    assert_eq!(response, 0);
 }

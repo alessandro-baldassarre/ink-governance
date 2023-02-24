@@ -193,6 +193,18 @@ where
         Ok(vote_end)
     }
 
+    default fn voting_delay(&self) -> u32 {
+        self._voting_delay()
+    }
+
+    default fn voting_period(&self) -> u32 {
+        self._voting_period()
+    }
+
+    default fn proposal_threshold(&self) -> u64 {
+        self._proposal_threshold()
+    }
+
     default fn propose(
         &mut self,
         proposal: Proposal,

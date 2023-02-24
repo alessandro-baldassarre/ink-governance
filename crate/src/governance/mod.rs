@@ -2,6 +2,7 @@
 pub mod governor;
 
 pub mod counter;
+pub mod extensions;
 pub mod modules;
 pub mod voter;
 

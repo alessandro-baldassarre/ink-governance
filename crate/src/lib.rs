@@ -8,6 +8,9 @@ mod governance;
 #[cfg(feature = "governor")]
 pub use governance::governor;
 
+#[cfg(feature = "governor_settings")]
+pub use governance::extensions::governor_settings;
+
 #[cfg(feature = "governor_counting_simple")]
 pub use governance::modules::governor_counting_simple;
 
