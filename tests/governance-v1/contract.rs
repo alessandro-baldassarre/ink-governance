@@ -4,15 +4,23 @@
 pub mod governance_v1 {
 
     use ink::{
-        codegen::{EmitEvent, Env},
+        codegen::{
+            EmitEvent,
+            Env,
+        },
         prelude::vec::Vec,
     };
     use ink_governance::{
-        governor::*, governor_counting_simple::*, governor_voting_group::*,
+        governor::*,
+        governor_counting_simple::*,
+        governor_voting_group::*,
     };
     use openbrush::{
         contracts::access_control::access_control,
-        traits::{Storage, String},
+        traits::{
+            Storage,
+            String,
+        },
     };
 
     /// Emitted when a proposal is create

@@ -288,3 +288,29 @@ fn proposal_threshold_works() {
     let response = contract.proposal_threshold();
     assert_eq!(response, 0);
 }
+
+#[ink::test]
+fn execute_works() {
+    let mut contract = build_contract();
+    let proposal = Proposal::default();
+    let description = String::from("Test proposal");
+    let description_hash = Hash::try_from(
+        contract
+            .env()
+            .hash_bytes::<Blake2x256>(&description)
+            .as_ref(),
+    )
+    .unwrap();
+    let err_response = contract
+        .execute(proposal.clone(), description_hash.clone())
+        .unwrap_err();
+    assert_eq!(err_response, GovernorError::ProposalNotFound);
+
+    contract.propose(proposal.clone(), description).unwrap();
+    let err_response = contract.execute(proposal, description_hash).unwrap_err();
+    assert_eq!(err_response, GovernorError::ProposalNotSuccessful);
+
+    // In this case since we are in an off-chain envoriment we can't test a successfull proposal.
+
+    // TODO: update this test if ink-test will support contract deployment.
+}
