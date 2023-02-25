@@ -11,7 +11,7 @@ use ink::{
     prelude::vec::Vec,
 };
 
-use crate::governance_v1::*;
+use crate::governance_v1_settings::*;
 use openbrush::{
     contracts::access_control::AccessControlError,
     test_utils::{

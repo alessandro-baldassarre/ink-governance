@@ -193,6 +193,10 @@ where
         Ok(vote_end)
     }
 
+    default fn counting_mode(&self) -> String {
+        String::from("")
+    }
+
     default fn voting_delay(&self) -> u32 {
         self._voting_delay()
     }
@@ -343,7 +347,7 @@ where
 
     default fn relay(&mut self, proposal: Proposal) -> Result<(), GovernorError> {
         // Flush the state into storage before the cross call.
-        // Because during cross call we cann call this contract.
+        // Because during cross call we can call this contract.
         self.flush();
         let result = build_call::<DefaultEnvironment>()
             .call_type(
@@ -365,10 +369,6 @@ where
 
         result?.unwrap();
         Ok(())
-    }
-
-    default fn counting_mode(&self) -> String {
-        String::from("")
     }
 }
 
@@ -407,7 +407,7 @@ pub trait Internal {
     fn _proposal_threshold(&self) -> u64;
 
     /// Returns Delay, in number of blocks, between the proposal is created and the vote starts.
-    /// This can be increassed to leave time for users to buy voting power, or delegate it, before
+    /// This can be increased to leave time for users to buy voting power, or delegate it, before
     /// the voting of a proposal starts.
     fn _voting_delay(&self) -> u32;
 
@@ -474,8 +474,7 @@ pub trait Internal {
         description_hash: &Hash,
     ) -> Result<ProposalId, GovernorError>;
 
-    /// Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve voting weight using Governor.get_votes() and call the _count_vote() inte
-    /// rnal function. Uses the _default_params().
+    /// Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve voting weight using Governor.get_votes() and call the _count_vote() internal function. Uses the _default_params().
     ///
     /// Emits a VoteCast event.
     fn _cast_vote(
@@ -486,8 +485,8 @@ pub trait Internal {
         reason: &String,
     ) -> Result<u64, GovernorError>;
 
-    /// Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve voting weight using Governor.get_votes() and call the _count_vote() inte
-    /// rnal function.
+    /// Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve voting weight using Governor.get_votes() and call the _count_vote()
+    /// internal function.
     ///
     /// Emits a VoteCast event.
     fn _cast_vote_with_params(
@@ -499,7 +498,7 @@ pub trait Internal {
         params: &[u8],
     ) -> Result<u64, GovernorError>;
 
-    /// Address through which the governor executes action. Will be overloaded by module that execute actions through another contract such as a timelock.
+    /// Address through which the governor executes action. Will be overloaded by module that execute actions through another contract such as a time-lock.
     fn _executor(&self) -> AccountId;
 }
 
@@ -628,7 +627,7 @@ where
         proposal: &Proposal,
     ) -> Result<(), GovernorError> {
         // Flush the state into storage before the cross call.
-        // Because during cross call we cann call this contract.
+        // Because during cross call we can call this contract.
         self.flush();
         let result = build_call::<DefaultEnvironment>()
             .call_type(
@@ -725,15 +724,15 @@ where
         reason: &String,
         params: &[u8],
     ) -> Result<u64, GovernorError> {
-        let propoposal_core = self
+        let proposal_core = self
             .data()
             .proposals
             .get(proposal_id)
             .ok_or(GovernorError::ProposalNotFound)?;
 
-        let weight =
-            self.data()
-                ._get_votes(account, propoposal_core.vote_start, params)?;
+        let weight = self
+            .data()
+            ._get_votes(account, proposal_core.vote_start, params)?;
 
         match self.state(*proposal_id)? {
             ProposalState::Active => {}

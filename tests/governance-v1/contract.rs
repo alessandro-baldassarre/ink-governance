@@ -2,7 +2,6 @@
 #![feature(min_specialization)]
 #[openbrush::contract]
 pub mod governance_v1 {
-
     use ink::{
         codegen::{
             EmitEvent,
@@ -227,14 +226,8 @@ pub mod governance_v1 {
     }
 }
 
-#[cfg(all(test, feature = "e2e-tests"))]
-mod e2e_tests {
-    type E2EResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
-    #[ink_e2e::test]
-    async fn e2e_can_add_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
-        Ok(())
-    }
-}
 #[cfg(test)]
 mod unit_tests;
+
+#[cfg(all(test, feature = "e2e-tests"))]
+mod e2e_tests;
