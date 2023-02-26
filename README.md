@@ -1,5 +1,5 @@
 
-# Ink-Governance
+# Openbrush-Governance
 
 
 The idea is to create a governance module as an extension of the open-brush library.
