@@ -18,10 +18,7 @@ use crate::governance::{
 };
 
 use openbrush::{
-    contracts::access_control::{
-        access_control,
-        DEFAULT_ADMIN_ROLE,
-    },
+    modifier_definition,
     modifiers,
     storage::Mapping,
     traits::{
@@ -29,6 +26,7 @@ use openbrush::{
         BlockNumber,
         OccupiedStorage,
         Storage,
+        ZERO_ADDRESS,
     },
 };
 
@@ -44,11 +42,22 @@ use ink::{
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Voting {
     pub members: Mapping<AccountId, u64>,
+    pub admin: AccountId,
     pub _reserved: Option<()>,
+}
+
+impl Default for Voting {
+    fn default() -> Self {
+        Voting {
+            members: Default::default(),
+            admin: ZERO_ADDRESS.into(),
+            _reserved: Default::default(),
+        }
+    }
 }
 
 impl voter::Voter for Voting {
@@ -62,15 +71,12 @@ impl voter::Voter for Voting {
     }
 }
 
-impl<T, C, V, M> VotingGroup for T
+#[modifier_definition]
+pub fn only_governance_or_admin<T, C, V, F, R, E>(
+    instance: &mut T,
+    body: F,
+) -> Result<R, E>
 where
-    M: access_control::members::MembersManager,
-    M: Storable
-        + StorableHint<ManualKey<{ access_control::STORAGE_KEY }>>
-        + AutoStorableHint<
-            ManualKey<3218979580, ManualKey<{ access_control::STORAGE_KEY }>>,
-            Type = M,
-        >,
     C: counter::Counter,
     C: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
@@ -85,13 +91,40 @@ where
             ManualKey<3230629697, ManualKey<{ governor::STORAGE_KEY }>>,
             Type = V,
         >,
-    T: Storage<access_control::Data<M>> + Storage<governor::Data<C, V>>,
-    T: OccupiedStorage<
-            { access_control::STORAGE_KEY },
-            WithData = access_control::Data<M>,
-        > + OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<C, V>>,
+    T: Storage<Data<C, V>>,
+    T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = Data<C, V>>,
+    F: FnOnce(&mut T) -> Result<R, E>,
+    E: From<GovernorError>,
 {
-    #[modifiers(access_control::only_role(DEFAULT_ADMIN_ROLE))]
+    if T::env().caller() != instance.data()._executor()
+        && !instance.data().voting_module._is_admin(T::env().caller())
+    {
+        return Err(GovernorError::OnlyGovernance.into())
+    }
+
+    body(instance)
+}
+
+impl<T, C, V> VotingGroup for T
+where
+    C: counter::Counter,
+    C: Storable
+        + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
+        + AutoStorableHint<
+            ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>,
+            Type = C,
+        >,
+    V: voter::Voter + Internal,
+    V: Storable
+        + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
+        + AutoStorableHint<
+            ManualKey<3230629697, ManualKey<{ governor::STORAGE_KEY }>>,
+            Type = V,
+        >,
+    T: Storage<governor::Data<C, V>>,
+    T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = governor::Data<C, V>>,
+{
+    #[modifiers(only_governance_or_admin())]
     default fn update_members(
         &mut self,
         members: Vec<VotingMember>,
@@ -105,20 +138,7 @@ where
             validate_unique_members(&members)?;
 
             for member in members {
-                if self
-                    .data::<Data<C, V>>()
-                    .voting_module
-                    ._get_member(&member.account)
-                    .is_err()
-                {
-                    self.data::<Data<C, V>>()
-                        .voting_module
-                        ._add_member(&member)?;
-                } else {
-                    self.data::<Data<C, V>>()
-                        .voting_module
-                        ._update_member(&member)?;
-                }
+                self.data::<Data<C, V>>().voting_module._add_member(&member);
             }
         }
 
@@ -153,37 +173,51 @@ where
         let members = members_result?;
         Ok(members)
     }
+
+    default fn _init_members(
+        &mut self,
+        admin: AccountId,
+        init_members: Vec<VotingMember>,
+    ) -> Result<(), VotingGroupError> {
+        if init_members.is_empty() {
+            return Err(VotingGroupError::ZeroMembers)
+        }
+
+        validate_unique_members(&init_members)?;
+        self.data::<Data<C, V>>()
+            .voting_module
+            ._init_members(admin, &init_members);
+
+        Ok(())
+    }
 }
 pub trait Internal {
-    fn _add_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError>;
+    fn _init_members(&mut self, admin: AccountId, init_members: &[VotingMember]);
+
+    fn _add_member(&mut self, member: &VotingMember);
 
     fn _remove_member(&mut self, member: &AccountId) -> Result<(), VotingGroupError>;
 
-    fn _update_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError>;
-
     fn _get_member(&self, account: &AccountId) -> Result<u64, VotingGroupError>;
+
+    fn _is_admin(&self, account: AccountId) -> bool;
 }
 
 impl Internal for Voting {
-    fn _add_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError> {
-        if self.members.get(&member.account).is_some() {
-            return Err(VotingGroupError::DuplicatedMember {
-                member: member.account,
-            })
+    fn _init_members(&mut self, admin: AccountId, init_members: &[VotingMember]) {
+        self.admin = admin;
+        for member in init_members {
+            self._add_member(member)
         }
+    }
 
+    fn _add_member(&mut self, member: &VotingMember) {
         self.members.insert(&member.account, &member.voting_power);
-        Ok(())
     }
 
     fn _remove_member(&mut self, member: &AccountId) -> Result<(), VotingGroupError> {
         self._get_member(member)?;
         self.members.remove(member);
-        Ok(())
-    }
-
-    fn _update_member(&mut self, member: &VotingMember) -> Result<(), VotingGroupError> {
-        self._add_member(member)?;
         Ok(())
     }
 
@@ -193,6 +227,10 @@ impl Internal for Voting {
             .get(account)
             .ok_or(VotingGroupError::NoMember)?;
         Ok(voting_power)
+    }
+
+    fn _is_admin(&self, account: AccountId) -> bool {
+        self.admin == account
     }
 }
 

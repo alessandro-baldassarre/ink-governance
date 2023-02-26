@@ -13,7 +13,6 @@ use ink::{
 
 use crate::governance_v1::*;
 use openbrush::{
-    contracts::access_control::AccessControlError,
     test_utils::{
         accounts,
         change_caller,
@@ -106,9 +105,9 @@ fn contruction_works() {
 fn update_members_works() {
     let accounts = default_accounts();
 
-    let alice_member = VotingMember {
+    let updated_alice = VotingMember {
         account: accounts.alice,
-        voting_power: 1,
+        voting_power: 2,
     };
     let bob_member = VotingMember {
         account: accounts.bob,
@@ -118,19 +117,26 @@ fn update_members_works() {
         account: accounts.charlie,
         voting_power: 1,
     };
-    let members = vec![alice_member.clone(), bob_member.clone()];
+
+    let members = vec![updated_alice.clone(), bob_member.clone()];
     let mut contract = build_contract();
 
     set_caller(accounts.bob);
 
-    let err_response = contract.update_members(members, vec![]).unwrap_err();
+    let err_response = contract
+        .update_members(members.clone(), vec![])
+        .unwrap_err();
 
     assert_eq!(
         err_response,
-        VotingGroupError::AccessControlError(AccessControlError::MissingRole)
+        VotingGroupError::GovernorError(GovernorError::OnlyGovernance)
     );
 
     set_caller(accounts.alice);
+
+    contract.update_members(members, vec![]).unwrap();
+    let response = contract.get_members(vec![accounts.alice]).unwrap();
+    assert_eq!(response, vec![updated_alice]);
 
     contract
         .update_members(vec![charlie_member.clone()], vec![])

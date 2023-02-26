@@ -10,12 +10,9 @@ pub mod governance_v1_settings {
         },
         prelude::vec::Vec,
     };
-    use openbrush::{
-        contracts::access_control::access_control,
-        traits::{
-            Storage,
-            String,
-        },
+    use openbrush::traits::{
+        Storage,
+        String,
     };
     use openbrush_governance::{
         governor::*,
@@ -128,8 +125,6 @@ pub mod governance_v1_settings {
             governor_counting_simple::Counting,
             governor_voting_group::Voting,
         >,
-        #[storage_field]
-        access_control: access_control::Data,
         #[storage_field]
         governor_settings: governor_settings::Data,
     }
@@ -280,18 +275,13 @@ pub mod governance_v1_settings {
             // Assign the admin role to the caller if is not set in the parameters
             let admin = admin.unwrap_or(Self::env().caller());
 
-            // Initialize access_control with the admin.
-            //
-            // Note: some methods like update_members has the access control (only_role:admin).
-            access_control::Internal::_init_with_admin(&mut instance, admin);
-
             // Initialize the group with the members.
             //
             // Note: Only the members of the group can propose or vote a proposal.
-            governor_voting_group::VotingGroup::update_members(
+            governor_voting_group::VotingGroup::_init_members(
                 &mut instance,
+                admin,
                 init_members,
-                Vec::new(),
             )?;
 
             governor_settings::Internal::_init_with_settings(

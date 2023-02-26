@@ -49,4 +49,10 @@ pub trait VotingGroup {
         &self,
         members: Vec<AccountId>,
     ) -> Result<Vec<VotingMember>, VotingGroupError>;
+
+    fn _init_members(
+        &mut self,
+        admin: AccountId,
+        init_members: Vec<VotingMember>,
+    ) -> Result<(), VotingGroupError>;
 }

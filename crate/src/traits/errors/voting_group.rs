@@ -85,7 +85,12 @@ impl From<ReentrancyGuardError> for VotingGroupError {
 }
 
 impl From<GovernorError> for VotingGroupError {
-    fn from(_governor: GovernorError) -> Self {
-        VotingGroupError::Custom(String::from("G::Governor Error"))
+    fn from(governor: GovernorError) -> Self {
+        match governor {
+            GovernorError::OnlyGovernance => {
+                VotingGroupError::GovernorError(GovernorError::OnlyGovernance)
+            }
+            _ => VotingGroupError::Custom(String::from("Error from Governor")),
+        }
     }
 }
