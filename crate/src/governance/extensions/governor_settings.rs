@@ -9,9 +9,11 @@ pub use crate::{
 use crate::governor;
 
 use crate::governance::{
-    counter,
     governor::*,
-    voter,
+    modules::{
+        counter,
+        voter,
+    },
 };
 
 use ink::storage::traits::{

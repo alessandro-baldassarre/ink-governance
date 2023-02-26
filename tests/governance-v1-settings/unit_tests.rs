@@ -25,7 +25,7 @@ use openbrush::{
     },
 };
 
-use ink_governance::{
+use openbrush_governance::{
     governor::*,
     governor_counting_simple::*,
     governor_settings::*,

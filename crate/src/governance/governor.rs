@@ -4,7 +4,7 @@ pub use crate::{
     traits::governance::*,
 };
 
-use crate::governance::{
+use crate::governance::modules::{
     counter,
     voter,
 };

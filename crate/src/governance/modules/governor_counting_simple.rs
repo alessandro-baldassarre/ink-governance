@@ -13,9 +13,11 @@ pub use crate::{
 };
 
 use crate::governance::{
-    counter,
     governor::*,
-    voter,
+    modules::{
+        counter,
+        voter,
+    },
 };
 use openbrush::{
     storage::Mapping,

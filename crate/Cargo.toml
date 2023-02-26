@@ -1,5 +1,5 @@
 [package]
-name          = "ink-governance"
+name          = "openbrush-governance"
 version       = "0.1.0"
 authors       = ["Alessandro Baldassarre <alessandro.baldassarre.dev@gmail.com>"]
 edition       = "2021"
@@ -9,7 +9,7 @@ documentation = "https://github.com/alessandro-baldassarre/ink-governance/crate#
 keywords      = ["blockchain", "polkadot", "ink"]
 
 [lib]
-name = "ink_governance"
+name = "openbrush_governance"
 path = "src/lib.rs"
 crate-type = ["rlib"]
 

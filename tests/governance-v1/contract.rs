@@ -9,17 +9,17 @@ pub mod governance_v1 {
         },
         prelude::vec::Vec,
     };
-    use ink_governance::{
-        governor::*,
-        governor_counting_simple::*,
-        governor_voting_group::*,
-    };
     use openbrush::{
         contracts::access_control::access_control,
         traits::{
             Storage,
             String,
         },
+    };
+    use openbrush_governance::{
+        governor::*,
+        governor_counting_simple::*,
+        governor_voting_group::*,
     };
 
     /// Emitted when a proposal is create

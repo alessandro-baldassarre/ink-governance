@@ -1,4 +1,4 @@
-use ink_governance::governor_voting_group::VotingMember;
+use openbrush_governance::governor_voting_group::VotingMember;
 
 use crate::governance_v1_settings::GovernorStructRef;
 
