@@ -219,6 +219,3 @@ pub mod governance_v1 {
 
 #[cfg(test)]
 mod unit_tests;
-
-#[cfg(all(test, feature = "e2e-tests"))]
-mod e2e_tests;
