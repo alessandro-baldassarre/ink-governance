@@ -8,7 +8,7 @@ use ink::prelude::vec::Vec;
 use crate::traits::errors::VotingGroupError;
 
 /// A Proposal is what can be proposed
-#[derive(Debug, Clone, PartialEq, scale::Encode, scale::Decode)]
+#[derive(Debug, Copy, Clone, PartialEq, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub struct VotingMember {
     /// The `AccountId` of the member.

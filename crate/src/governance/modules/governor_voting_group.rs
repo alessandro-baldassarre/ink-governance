@@ -94,12 +94,12 @@ where
     T: Storage<Data<C, V>>,
     T: OccupiedStorage<{ governor::STORAGE_KEY }, WithData = Data<C, V>>,
     F: FnOnce(&mut T) -> Result<R, E>,
-    E: From<GovernorError>,
+    E: From<VotingGroupError>,
 {
     if T::env().caller() != instance.data()._executor()
         && !instance.data().voting_module._is_admin(T::env().caller())
     {
-        return Err(GovernorError::OnlyGovernance.into())
+        return Err(VotingGroupError::OnlyAdminOrGovernance.into())
     }
 
     body(instance)

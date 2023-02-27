@@ -1,14 +1,4 @@
-use openbrush::{
-    contracts::{
-        access_control::AccessControlError,
-        traits::{
-            errors::ReentrancyGuardError,
-            pausable::PausableError,
-            proxy::OwnableError,
-        },
-    },
-    traits::String,
-};
+use openbrush::traits::String;
 
 /// The Governor error type. Contract will throw one of this errors.
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
@@ -36,54 +26,4 @@ pub enum GovernorError {
     OnlyGovernance,
     /// Returned if the votes for that account was not found.
     NoVotes,
-}
-
-impl From<AccessControlError> for GovernorError {
-    fn from(access: AccessControlError) -> Self {
-        match access {
-            AccessControlError::MissingRole => {
-                GovernorError::Custom(String::from("AC::MissingRole"))
-            }
-            AccessControlError::RoleRedundant => {
-                GovernorError::Custom(String::from("AC::RoleRedundant"))
-            }
-            AccessControlError::InvalidCaller => {
-                GovernorError::Custom(String::from("AC::InvalidCaller"))
-            }
-        }
-    }
-}
-
-impl From<OwnableError> for GovernorError {
-    fn from(ownable: OwnableError) -> Self {
-        match ownable {
-            OwnableError::CallerIsNotOwner => {
-                GovernorError::Custom(String::from("O::CallerIsNotOwner"))
-            }
-            OwnableError::NewOwnerIsZero => {
-                GovernorError::Custom(String::from("O::NewOwnerIsZero"))
-            }
-        }
-    }
-}
-
-impl From<PausableError> for GovernorError {
-    fn from(pausable: PausableError) -> Self {
-        match pausable {
-            PausableError::Paused => GovernorError::Custom(String::from("P::Paused")),
-            PausableError::NotPaused => {
-                GovernorError::Custom(String::from("P::NotPaused"))
-            }
-        }
-    }
-}
-
-impl From<ReentrancyGuardError> for GovernorError {
-    fn from(guard: ReentrancyGuardError) -> Self {
-        match guard {
-            ReentrancyGuardError::ReentrantCall => {
-                GovernorError::Custom(String::from("RG::ReentrantCall"))
-            }
-        }
-    }
 }
