@@ -127,10 +127,7 @@ fn update_members_works() {
         .update_members(members.clone(), vec![])
         .unwrap_err();
 
-    assert_eq!(
-        err_response,
-        VotingGroupError::GovernorError(GovernorError::OnlyGovernance)
-    );
+    assert_eq!(err_response, VotingGroupError::OnlyAdminOrGovernance);
 
     set_caller(accounts.alice);
 
