@@ -632,7 +632,7 @@ where
         let result = build_call::<DefaultEnvironment>()
             .call_type(
                 Call::new(proposal.callee)
-                    .gas_limit(Gas::default())
+                    .gas_limit(0)
                     .transferred_value(proposal.transferred_value),
             )
             .exec_input(
@@ -648,7 +648,10 @@ where
         self.load();
         self._emit_proposal_executed(*proposal_id);
 
-        result?.unwrap();
+        let post_call = result?;
+
+        post_call?;
+
         Ok(())
     }
 

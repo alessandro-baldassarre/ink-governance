@@ -1,3 +1,4 @@
+use ink::LangError;
 use openbrush::traits::String;
 
 /// The Governor error type. Contract will throw one of this errors.
@@ -6,6 +7,8 @@ use openbrush::traits::String;
 pub enum GovernorError {
     /// Custom error type for cases if writer of traits added own restrictions
     Custom(String),
+    /// Error from Lang
+    Lang(LangError),
     /// Returned if the proposal was not found.
     ProposalNotFound,
     /// Returned if the proposal submitted has invalid parameters
@@ -26,4 +29,10 @@ pub enum GovernorError {
     OnlyGovernance,
     /// Returned if the votes for that account was not found.
     NoVotes,
+}
+
+impl From<LangError> for GovernorError {
+    fn from(_lang: LangError) -> Self {
+        GovernorError::Custom(String::from("LE lang err"))
+    }
 }
