@@ -313,7 +313,8 @@ fn execute_works() {
     let err_response = contract.execute(proposal, description_hash).unwrap_err();
     assert_eq!(err_response, GovernorError::ProposalNotSuccessful);
 
-    // In this case since we are in an off-chain envoriment we can't test a successfull proposal.
+    // In this case since we are in an off-chain envoriment we can't test a successfull
+    // proposal.(see e2e_tests)
 
     // TODO: update this test if ink-test will support contract deployment.
 }

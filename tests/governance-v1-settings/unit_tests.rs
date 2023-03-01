@@ -13,7 +13,6 @@ use ink::{
 
 use crate::governance_v1_settings::*;
 use openbrush::{
-    contracts::access_control::AccessControlError,
     test_utils::{
         accounts,
         change_caller,
@@ -126,10 +125,7 @@ fn update_members_works() {
 
     let err_response = contract.update_members(members, vec![]).unwrap_err();
 
-    assert_eq!(
-        err_response,
-        VotingGroupError::AccessControlError(AccessControlError::MissingRole)
-    );
+    assert_eq!(err_response, VotingGroupError::OnlyAdminOrGovernance);
 
     set_caller(accounts.alice);
 
