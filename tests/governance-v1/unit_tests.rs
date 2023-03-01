@@ -194,7 +194,7 @@ fn propose_works() {
         assert_eq!(prop_id, &proposal_id);
         assert_eq!(prop, &proposal);
         assert_eq!(start_block, &0);
-        assert_eq!(end_block, &50400);
+        assert_eq!(end_block, &2);
         assert_eq!(des, &description);
     } else {
         panic!("encountered unexpected event kind: expected a ProposalCreated event")
@@ -282,7 +282,7 @@ fn voting_delay_works() {
 fn voting_period_works() {
     let contract = build_contract();
     let response = contract.voting_period();
-    assert_eq!(response, 50400);
+    assert_eq!(response, 2);
 }
 
 #[ink::test]

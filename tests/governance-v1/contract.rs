@@ -107,10 +107,10 @@ pub mod governance_v1 {
     // Override the internal methods
     impl governor::Internal for GovernorStruct {
         fn _voting_delay(&self) -> u32 {
-            0
+            0 // block
         }
         fn _voting_period(&self) -> u32 {
-            50400 // 1 week
+            2 // block (for testing purpose)
         }
         fn _emit_proposal_created(
             &self,
