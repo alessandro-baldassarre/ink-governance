@@ -156,10 +156,10 @@ async fn e2e_can_propose(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
 
     // Build a proposal message
     let proposal = Proposal::default();
-    let description = String::from("Test proposal");
+    let description = openbrush::traits::String::from("Test proposal");
 
     let propose = build_message::<GovernorStructRef>(contract_acc_id.clone())
-        .call(|gov| gov.propose(proposal.clone(), description.clone().into()));
+        .call(|gov| gov.propose(proposal.clone(), description.clone()));
 
     let proposal_id = client
         .call_dry_run(&ink_e2e::bob(), &propose, 0, None)
@@ -186,24 +186,43 @@ async fn e2e_can_propose(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
         .await
         .unwrap();
 
-    // Take the emitted events
-    let emitted_events = propose_response
+    // Filter the events
+    let contract_emitted_event = propose_response
         .events
         .iter()
-        .map(|event| event.expect("expect event"))
-        .collect::<Vec<_>>();
-
-    let contract_emitted_event = emitted_events
-        .into_iter()
-        .filter(|event| event.event_metadata().event() == "ContractEmitted")
-        .next()
+        .find(|event| {
+            event
+                .as_ref()
+                .expect("Expect Event")
+                .event_metadata()
+                .event()
+                == "ContractEmitted"
+        })
+        .expect("Expect ContractEmitted event")
         .unwrap();
 
-    let bytes_text: String =
-        String::from_utf8_lossy(contract_emitted_event.bytes()).to_string();
+    // Decode to the expected event type (skip field_context)
+    let event = contract_emitted_event.field_bytes();
+    let decoded_event = <ProposalCreated as scale::Decode>::decode(&mut &event[35..])
+        .expect("invalid data");
 
-    // Assert that the proposal created event was emitted
-    assert!(bytes_text.contains("GovernorStruct::ProposalCreated"));
+    // Destructor
+    let ProposalCreated {
+        proposer,
+        proposal_id: prop_id,
+        proposal: prop,
+        start_block,
+        end_block,
+        description: des,
+    } = decoded_event;
+
+    // Assert with the expected value
+    assert_eq!(proposer, bob);
+    assert_eq!(prop_id, proposal_id);
+    assert_eq!(prop, proposal);
+    assert_eq!(start_block, 2);
+    assert_eq!(end_block, 4);
+    assert_eq!(des, description);
 
     let proposal_state = build_message::<GovernorStructRef>(contract_acc_id.clone())
         .call(|gov| gov.state(proposal_id));
