@@ -373,7 +373,7 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
 }
 
 // Test to cover the complete flow of Governor:
-// 1) Propose: a group member propose to add a new member
+// 1) Propose: a group member propose to set a new voting_period
 // 2) Vote: the proposal is voted in favour
 // 3) Execute: execute the succeeded proposal
 #[ink_e2e::test]
@@ -382,7 +382,6 @@ async fn e2e_can_propose_vote_execute(
 ) -> E2EResult<()> {
     let alice = ink_e2e::account_id(ink_e2e::AccountKeyring::Alice);
     let bob = ink_e2e::account_id(ink_e2e::AccountKeyring::Bob);
-    let charlie = ink_e2e::account_id(ink_e2e::AccountKeyring::Charlie);
 
     let alice_member = VotingMember {
         account: alice,
@@ -406,24 +405,15 @@ async fn e2e_can_propose_vote_execute(
         .expect("instantiate failed")
         .account_id;
 
-    let charlie_member = VotingMember {
-        account: charlie,
-        voting_power: 1,
-    };
-
-    // Build the proposal to add a new member (charlie)
+    // Build the proposal to set a new voting period
 
     // Encode the parameters to pass in the selector (function)
-    let update_members = vec![charlie_member];
-    let remove_members: Vec<u8> = Vec::new();
+    let new_voting_period: u32 = 3;
 
-    let mut input = scale::Encode::encode(&update_members);
-    let mut input2 = scale::Encode::encode(&remove_members);
-
-    input.append(&mut input2);
+    let input = scale::Encode::encode(&new_voting_period);
 
     // Decode the selector hex 4 bytes
-    let selector_hex = "24990c25";
+    let selector_hex = "97a1433e";
     let selector = <[u8; 4]>::from_hex(selector_hex).expect("Decoding failed");
 
     let proposal = Proposal {
@@ -432,8 +422,9 @@ async fn e2e_can_propose_vote_execute(
         input,
         transferred_value: 0,
     };
-    let description = String::from("Test proposal");
-    let description_hash = Hash::try_from(blake2x256!("Test proposal")).unwrap();
+    let description = String::from("Set a new voting period");
+    let description_hash =
+        Hash::try_from(blake2x256!("Set a new voting period")).unwrap();
     let propose = build_message::<GovernorStructRef>(contract_acc_id.clone())
         .call(|gov| gov.propose(proposal.clone(), description.clone().into()));
 
@@ -497,17 +488,16 @@ async fn e2e_can_propose_vote_execute(
         .await
         .unwrap();
 
-    let get_members = build_message::<GovernorStructRef>(contract_acc_id.clone())
-        .call(|gov| gov.get_members(vec![charlie]));
+    let voting_period = build_message::<GovernorStructRef>(contract_acc_id.clone())
+        .call(|gov| gov.voting_period());
 
-    let get_members_res = client
-        .call_dry_run(&ink_e2e::alice(), &get_members, 0, None)
+    let voting_period_res = client
+        .call_dry_run(&ink_e2e::alice(), &voting_period, 0, None)
         .await
-        .return_value()
-        .unwrap();
+        .return_value();
 
     // Assert that the member was add correctly
-    assert_eq!(get_members_res, vec![charlie_member]);
+    assert_eq!(voting_period_res, 3);
 
     Ok(())
 }
