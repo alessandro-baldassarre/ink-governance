@@ -33,6 +33,8 @@ governor_settings = []
 governor_counting_simple = []
 governor_voting_group = []
 
+psp22 = []
+
 governor_v1 = ["governor","governor_counting_simple","governor_voting_group"]
 
 

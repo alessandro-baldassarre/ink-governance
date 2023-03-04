@@ -4,6 +4,7 @@
 pub mod traits;
 
 mod governance;
+mod token;
 
 #[cfg(feature = "governor")]
 pub use governance::governor;
@@ -16,3 +17,6 @@ pub use governance::modules::governor_counting_simple;
 
 #[cfg(feature = "governor_voting_group")]
 pub use governance::modules::governor_voting_group;
+
+#[cfg(feature = "psp22")]
+pub use token::psp22;
