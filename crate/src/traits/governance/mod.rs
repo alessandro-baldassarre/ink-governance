@@ -10,3 +10,7 @@ pub mod modules {
 pub mod extensions {
     pub mod settings;
 }
+
+pub mod utils {
+    pub mod votes;
+}
