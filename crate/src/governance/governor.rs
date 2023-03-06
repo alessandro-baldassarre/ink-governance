@@ -346,29 +346,7 @@ where
     }
 
     default fn relay(&mut self, proposal: Proposal) -> Result<(), GovernorError> {
-        // Flush the state into storage before the cross call.
-        // Because during cross call we can call this contract.
-        self.flush();
-        let result = build_call::<DefaultEnvironment>()
-            .call_type(
-                Call::new(proposal.callee)
-                    .gas_limit(Gas::default())
-                    .transferred_value(proposal.transferred_value),
-            )
-            .exec_input(
-                ExecutionInput::new(proposal.selector.into())
-                    .push_arg(CallInput(&proposal.input)),
-            )
-            .returns::<()>()
-            .call_flags(CallFlags::default().set_allow_reentry(true))
-            .try_invoke()
-            .map_err(|_| GovernorError::CallRevertedWithoutMessage);
-
-        // Load the state of the contract after the cross call.
-        self.load();
-
-        result?.unwrap();
-        Ok(())
+        unimplemented!()
     }
 }
 

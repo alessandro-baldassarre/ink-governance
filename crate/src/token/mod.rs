@@ -1,2 +1,2 @@
-#[cfg(feature = "psp22")]
+#[cfg(feature = "psp22_votes")]
 pub mod psp22;
