@@ -1,11 +1,8 @@
 use openbrush::{
-    contracts::{
-        access_control::AccessControlError,
-        traits::{
-            errors::ReentrancyGuardError,
-            pausable::PausableError,
-            proxy::OwnableError,
-        },
+    contracts::traits::{
+        errors::ReentrancyGuardError,
+        pausable::PausableError,
+        proxy::OwnableError,
     },
     traits::String,
 };
@@ -17,30 +14,12 @@ use super::GovernorError;
 pub enum CountingSimpleError {
     /// Custom error type for cases if writer of traits added own restrictions
     Custom(String),
-    /// Error from AccessControl
-    AccessControlError(AccessControlError),
     /// Error from Governor
     GovernorError(GovernorError),
     /// Returns if no account vote was found for that proposal
     NoResult,
     /// Returns if no proposal was found
     NoProposal,
-}
-
-impl From<AccessControlError> for CountingSimpleError {
-    fn from(access: AccessControlError) -> Self {
-        match access {
-            AccessControlError::MissingRole => {
-                CountingSimpleError::AccessControlError(AccessControlError::MissingRole)
-            }
-            AccessControlError::RoleRedundant => {
-                CountingSimpleError::AccessControlError(AccessControlError::RoleRedundant)
-            }
-            AccessControlError::InvalidCaller => {
-                CountingSimpleError::AccessControlError(AccessControlError::InvalidCaller)
-            }
-        }
-    }
 }
 
 impl From<OwnableError> for CountingSimpleError {

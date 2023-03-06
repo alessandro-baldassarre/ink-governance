@@ -37,38 +37,12 @@ pub mod governance_v1 {
     impl Transfer for GovernorStruct {
         fn _after_token_transfer(
             &mut self,
-            from: Option<&openbrush::traits::AccountId>,
-            to: Option<&openbrush::traits::AccountId>,
-            amount: &openbrush::traits::Balance,
+            from: Option<&AccountId>,
+            to: Option<&AccountId>,
+            amount: &Balance,
         ) -> Result<(), PSP22Error> {
-            match (from, to) {
-                (Some(from), Some(to)) => {
-                    self._move_voting_power(from, to, amount);
-                    return Ok(())
-                }
-                (Some(from), None) => {
-                    self._write_checkpoint(
-                        None,
-                        |a: Vote, b: Vote| -> Vote { a - b },
-                        amount,
-                    );
-                    self._move_voting_power(from, &ZERO_ADDRESS.into(), amount);
-                    return Ok(())
-                }
-                (None, Some(to)) => {
-                    self._write_checkpoint(
-                        None,
-                        |a: Vote, b: Vote| -> Vote { a + b },
-                        amount,
-                    );
-                    self._move_voting_power(&ZERO_ADDRESS.into(), to, amount);
-
-                    return Ok(())
-                }
-                _ => {
-                    return Err(PSP22Error::Custom(String::from("Zero address provided")))
-                }
-            }
+            self._after_token_transfer_votes(from, to, amount).unwrap();
+            Ok(())
         }
     }
 

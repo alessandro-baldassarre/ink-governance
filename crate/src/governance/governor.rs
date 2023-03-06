@@ -19,7 +19,6 @@ use ink::{
         hash::Blake2x256,
         CallFlags,
         DefaultEnvironment,
-        Gas,
     },
     prelude::{
         collections::vec_deque::VecDeque,
@@ -345,7 +344,8 @@ where
         Ok(votes)
     }
 
-    default fn relay(&mut self, proposal: Proposal) -> Result<(), GovernorError> {
+    default fn relay(&mut self, _proposal: Proposal) -> Result<(), GovernorError> {
+        // TODO:
         unimplemented!()
     }
 }
