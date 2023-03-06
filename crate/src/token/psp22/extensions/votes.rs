@@ -122,6 +122,9 @@ where
             from: String::from("u32"),
             to: String::from("usize"),
         })?;
+        if index >= checkpoints.len() {
+            return Err(PSP22VotesError::VotesError(VotesError::NoCheckpoint))
+        }
         Ok(checkpoints[index].clone())
     }
 
@@ -133,7 +136,7 @@ where
             .data::<Data>()
             .checkpoints
             .get(&account)
-            .ok_or(PSP22VotesError::from(VotesError::NoCheckpoint))?;
+            .ok_or(PSP22VotesError::VotesError(VotesError::NoCheckpoint))?;
 
         let len =
             usize_to_u32(checkpoints.len()).ok_or(PSP22VotesError::ConvertionError {
@@ -182,6 +185,13 @@ pub trait Internal {
     ) -> Result<(OldWeight, NewWeight), VotesError>
     where
         F: FnOnce(Vote, Vote) -> Vote;
+
+    fn _after_token_transfer_votes(
+        &mut self,
+        from: Option<&AccountId>,
+        to: Option<&AccountId>,
+        amount: &Balance,
+    ) -> Result<(), VotesError>;
 }
 
 impl<T> Internal for T
@@ -244,7 +254,7 @@ where
         delegator: &AccountId,
         delegatee: &AccountId,
     ) -> Result<(), VotesError> {
-        let current_delegate = self._delegates(delegator)?;
+        let current_delegate = self._delegates(delegator).unwrap_or(*delegator);
         let delegator_balance = self.data::<psp22::Data>()._balance_of(delegator);
         self.data::<Data>().delegates.insert(delegator, delegatee);
 
@@ -267,7 +277,7 @@ where
             return Err(VotesError::MovePowerAmountError)
         }
         if source != &ZERO_ADDRESS.into() {
-            let (old_weight, new_weight) = self._write_checkpoint(
+            let (_old_weight, _new_weight) = self._write_checkpoint(
                 Some(source),
                 |a: Vote, b: Vote| -> Vote { a - b },
                 amount,
@@ -275,7 +285,7 @@ where
             //_emit_delegate_vote_changed
         }
         if destination != &ZERO_ADDRESS.into() {
-            let (old_weight, new_weight) = self._write_checkpoint(
+            let (_old_weight, _new_weight) = self._write_checkpoint(
                 Some(destination),
                 |a: Vote, b: Vote| -> Vote { a + b },
                 amount,
@@ -334,5 +344,42 @@ where
         }
 
         Ok((old_weight, new_weight))
+    }
+    default fn _after_token_transfer_votes(
+        &mut self,
+        from: Option<&AccountId>,
+        to: Option<&AccountId>,
+        amount: &Balance,
+    ) -> Result<(), VotesError> {
+        match (from, to) {
+            (Some(from), Some(to)) => {
+                self._move_voting_power(
+                    &self.delegates(*from).unwrap_or(ZERO_ADDRESS.into()),
+                    &self.delegates(*to).unwrap_or(ZERO_ADDRESS.into()),
+                    amount,
+                )?;
+                return Ok(())
+            }
+            (Some(from), None) => {
+                self._write_checkpoint(
+                    None,
+                    |a: Vote, b: Vote| -> Vote { a - b },
+                    amount,
+                )?;
+                self._move_voting_power(from, &ZERO_ADDRESS.into(), amount)?;
+                return Ok(())
+            }
+            (None, Some(to)) => {
+                self._write_checkpoint(
+                    None,
+                    |a: Vote, b: Vote| -> Vote { a + b },
+                    amount,
+                )?;
+                self._move_voting_power(&ZERO_ADDRESS.into(), to, amount)?;
+
+                return Ok(())
+            }
+            _ => return Err(VotesError::MovePowerAmountError),
+        }
     }
 }
