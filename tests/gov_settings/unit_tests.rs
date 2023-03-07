@@ -11,7 +11,7 @@ use ink::{
     prelude::vec::Vec,
 };
 
-use crate::governance_v1::*;
+use crate::gov_settings::*;
 use openbrush::{
     test_utils::{
         accounts,
@@ -24,13 +24,14 @@ use openbrush::{
     },
 };
 
-use openbrush_governance::{
+use ink_governance::{
     governor::*,
     governor_counting_simple::*,
+    governor_settings::*,
     governor_voting_group::*,
 };
 
-type Event = <GovernorStruct as ::ink::reflect::ContractEventBase>::Type;
+type Event = <Contract as ::ink::reflect::ContractEventBase>::Type;
 
 fn default_accounts() -> DefaultAccounts<DefaultEnvironment> {
     accounts()
@@ -40,7 +41,7 @@ fn set_caller(sender: AccountId) {
     change_caller(sender)
 }
 
-fn build_contract() -> GovernorStruct {
+fn build_contract() -> Contract {
     let accounts = default_accounts();
 
     let alice_member = VotingMember {
@@ -56,7 +57,7 @@ fn build_contract() -> GovernorStruct {
 
     set_caller(accounts.alice);
 
-    GovernorStruct::new(None, init_members).unwrap()
+    Contract::new(None, init_members, 0, 50400, 0).unwrap()
 }
 
 fn decode_events(emittend_events: Vec<EmittedEvent>) -> Vec<Event> {
@@ -68,7 +69,7 @@ fn decode_events(emittend_events: Vec<EmittedEvent>) -> Vec<Event> {
         .collect()
 }
 
-fn propose(contract: &mut GovernorStruct) -> ProposalId {
+fn propose(contract: &mut Contract) -> ProposalId {
     let accounts = default_accounts();
 
     set_caller(accounts.bob);
@@ -77,7 +78,7 @@ fn propose(contract: &mut GovernorStruct) -> ProposalId {
     contract.propose(proposal, description).unwrap()
 }
 
-fn cast_against_vote(contract: &mut GovernorStruct, proposal_id: ProposalId) -> u64 {
+fn cast_against_vote(contract: &mut Contract, proposal_id: ProposalId) -> u64 {
     ink::env::test::advance_block::<DefaultEnvironment>();
     contract.cast_vote(proposal_id, 1).unwrap()
 }
@@ -105,9 +106,9 @@ fn contruction_works() {
 fn update_members_works() {
     let accounts = default_accounts();
 
-    let updated_alice = VotingMember {
+    let alice_member = VotingMember {
         account: accounts.alice,
-        voting_power: 2,
+        voting_power: 1,
     };
     let bob_member = VotingMember {
         account: accounts.bob,
@@ -117,23 +118,16 @@ fn update_members_works() {
         account: accounts.charlie,
         voting_power: 1,
     };
-
-    let members = vec![updated_alice.clone(), bob_member.clone()];
+    let members = vec![alice_member.clone(), bob_member.clone()];
     let mut contract = build_contract();
 
     set_caller(accounts.bob);
 
-    let err_response = contract
-        .update_members(members.clone(), vec![])
-        .unwrap_err();
+    let err_response = contract.update_members(members, vec![]).unwrap_err();
 
     assert_eq!(err_response, VotingGroupError::OnlyAdminOrGovernance);
 
     set_caller(accounts.alice);
-
-    contract.update_members(members, vec![]).unwrap();
-    let response = contract.get_members(vec![accounts.alice]).unwrap();
-    assert_eq!(response, vec![updated_alice]);
 
     contract
         .update_members(vec![charlie_member.clone()], vec![])
@@ -188,13 +182,13 @@ fn propose_works() {
         start_block,
         end_block,
         description: des,
-    }) = &decoded_events[0]
+    }) = &decoded_events[3]
     {
         assert_eq!(proposer, &accounts.bob);
         assert_eq!(prop_id, &proposal_id);
         assert_eq!(prop, &proposal);
         assert_eq!(start_block, &0);
-        assert_eq!(end_block, &2);
+        assert_eq!(end_block, &50400);
         assert_eq!(des, &description);
     } else {
         panic!("encountered unexpected event kind: expected a ProposalCreated event")
@@ -282,7 +276,7 @@ fn voting_delay_works() {
 fn voting_period_works() {
     let contract = build_contract();
     let response = contract.voting_period();
-    assert_eq!(response, 2);
+    assert_eq!(response, 50400);
 }
 
 #[ink::test]
@@ -293,28 +287,45 @@ fn proposal_threshold_works() {
 }
 
 #[ink::test]
-fn execute_works() {
+fn set_voting_delay_works() {
     let mut contract = build_contract();
-    let proposal = Proposal::default();
-    let description = String::from("Test proposal");
-    let description_hash = Hash::try_from(
-        contract
-            .env()
-            .hash_bytes::<Blake2x256>(&description)
-            .as_ref(),
-    )
-    .unwrap();
-    let err_response = contract
-        .execute(proposal.clone(), description_hash.clone())
-        .unwrap_err();
-    assert_eq!(err_response, GovernorError::ProposalNotFound);
+    // In this case since we are in an off-chain envoriment, the modifier only_governance is not applied
+    // and so we can set new delay without a passed proposal.
+    contract.set_voting_delay(2).unwrap();
+    let response = contract.voting_delay();
+    assert_eq!(response, 2);
+    let emittend_events = ink::env::test::recorded_events().collect::<Vec<_>>();
+    let decoded_events = decode_events(emittend_events);
+    if let Event::VotingDelaySet(VotingDelaySet {
+        old_voting_delay,
+        new_voting_delay,
+    }) = &decoded_events[3]
+    {
+        assert_eq!(old_voting_delay, &0);
+        assert_eq!(new_voting_delay, &2);
+    } else {
+        panic!("encountered unexpected event kind: expected a VotingDelaySet event")
+    }
+}
 
-    contract.propose(proposal.clone(), description).unwrap();
-    let err_response = contract.execute(proposal, description_hash).unwrap_err();
-    assert_eq!(err_response, GovernorError::ProposalNotSuccessful);
-
-    // In this case since we are in an off-chain envoriment we can't test a successfull
-    // proposal.(see e2e_tests)
-
-    // TODO: update this test if ink-test will support contract deployment.
+#[ink::test]
+fn set_voting_period_works() {
+    let mut contract = build_contract();
+    // In this case since we are in an off-chain envoriment, the modifier only_governance is not applied
+    // and so we can set new delay without a passed proposal.
+    contract.set_voting_period(9).unwrap();
+    let response = contract.voting_period();
+    assert_eq!(response, 9);
+    let emittend_events = ink::env::test::recorded_events().collect::<Vec<_>>();
+    let decoded_events = decode_events(emittend_events);
+    if let Event::VotingPeriodSet(VotingPeriodSet {
+        old_voting_period,
+        new_voting_period,
+    }) = &decoded_events[3]
+    {
+        assert_eq!(old_voting_period, &50400);
+        assert_eq!(new_voting_period, &9);
+    } else {
+        panic!("encountered unexpected event kind: expected a VotingDelaySet event")
+    }
 }

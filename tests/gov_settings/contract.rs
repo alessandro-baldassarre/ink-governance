@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(min_specialization)]
 #[openbrush::contract]
-pub mod governance_v1_settings {
+pub mod gov_settings {
 
     use ink::{
         codegen::{
@@ -10,15 +10,15 @@ pub mod governance_v1_settings {
         },
         prelude::vec::Vec,
     };
-    use openbrush::traits::{
-        Storage,
-        String,
-    };
-    use openbrush_governance::{
+    use ink_governance::{
         governor::*,
         governor_counting_simple::*,
         governor_settings::*,
         governor_voting_group::*,
+    };
+    use openbrush::traits::{
+        Storage,
+        String,
     };
 
     /// Emitted when a proposal is create
@@ -119,7 +119,7 @@ pub mod governance_v1_settings {
 
     #[ink(storage)]
     #[derive(Default, Storage)]
-    pub struct GovernorStruct {
+    pub struct Contract {
         #[storage_field]
         governor: governor::Data<
             governor_counting_simple::Counting,
@@ -129,16 +129,16 @@ pub mod governance_v1_settings {
         governor_settings: governor_settings::Data,
     }
 
-    impl Governor for GovernorStruct {}
+    impl Governor for Contract {}
 
-    impl VotingGroup for GovernorStruct {}
+    impl VotingGroup for Contract {}
 
-    impl CountingSimple for GovernorStruct {}
+    impl CountingSimple for Contract {}
 
-    impl GovernorSettings for GovernorStruct {}
+    impl GovernorSettings for Contract {}
 
     // Override the internal methods
-    impl governor::Internal for GovernorStruct {
+    impl governor::Internal for Contract {
         fn _voting_delay(&self) -> u32 {
             self.governor_settings.voting_delay
         }
@@ -208,7 +208,7 @@ pub mod governance_v1_settings {
         }
     }
 
-    impl governor_settings::Internal for GovernorStruct {
+    impl governor_settings::Internal for Contract {
         fn _emit_voting_delay_set(
             &self,
             old_voting_delay: openbrush::traits::BlockNumber,
@@ -259,7 +259,7 @@ pub mod governance_v1_settings {
         }
     }
 
-    impl GovernorStruct {
+    impl Contract {
         /// Initialize the contract with a list of voting members and optional admin (if not set
         /// the caller will be the admin by default)
         #[ink(constructor)]
