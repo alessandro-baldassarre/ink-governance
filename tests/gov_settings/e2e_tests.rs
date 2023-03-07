@@ -1,5 +1,5 @@
-use crate::governance_v1::*;
-use openbrush_governance::{
+use crate::gov_settings::*;
+use ink_governance::{
     governor::*,
     governor_counting_simple::*,
     governor_voting_group::*,
@@ -11,7 +11,7 @@ use ink_e2e::build_message;
 
 use openbrush::traits::Hash;
 
-use openbrush_governance::{
+use ink_governance::{
     governor::governor_external::Governor,
     governor_counting_simple::countingsimple_external::CountingSimple,
     governor_voting_group::votinggroup_external::VotingGroup,
@@ -35,9 +35,9 @@ async fn e2e_can_update_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<
         voting_power: 1,
     };
     let init_members = vec![alice_member.clone(), bob_member.clone()];
-    let constructor = GovernorStructRef::new(None, init_members);
+    let constructor = ContractRef::new(None, init_members, 0, 2, 0);
     let contract_acc_id = client
-        .instantiate("governance_v1", &ink_e2e::alice(), constructor, 0, None)
+        .instantiate("gov_settings", &ink_e2e::alice(), constructor, 0, None)
         .await
         .expect("instantiate failed")
         .account_id;
@@ -49,7 +49,7 @@ async fn e2e_can_update_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<
 
     // Try to update the members through a call from Bob and the call should fail,
     // Bob is not the admin of the group and has not proposed the update via governance.
-    let update_members = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let update_members = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.update_members(vec![alice_updated], vec![]));
 
     let update_members_err = client
@@ -70,7 +70,7 @@ async fn e2e_can_update_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<
         .await
         .expect("update_members failed");
 
-    let get_members = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let get_members = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.get_members(vec![alice]));
 
     let get_members_res = client
@@ -88,7 +88,7 @@ async fn e2e_can_update_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<
     };
 
     // Try to add new member
-    let add_members = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let add_members = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.update_members(vec![charlie_member], vec![]));
 
     client
@@ -96,7 +96,7 @@ async fn e2e_can_update_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<
         .await
         .expect("add_members failed");
 
-    let get_members = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let get_members = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.get_members(vec![charlie]));
 
     let get_members_res = client
@@ -109,7 +109,7 @@ async fn e2e_can_update_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<
     assert_eq!(get_members_res, vec![charlie_member]);
 
     // Try to remove a member
-    let remove_members = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let remove_members = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.update_members(vec![], vec![charlie]));
 
     client
@@ -117,7 +117,7 @@ async fn e2e_can_update_members(mut client: ink_e2e::Client<C, E>) -> E2EResult<
         .await
         .expect("remove_members failed");
 
-    let get_members = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let get_members = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.get_members(vec![charlie]));
 
     let get_members_res_err = client
@@ -147,9 +147,9 @@ async fn e2e_can_propose(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
         voting_power: 1,
     };
     let init_members = vec![alice_member.clone(), bob_member.clone()];
-    let constructor = GovernorStructRef::new(None, init_members);
+    let constructor = ContractRef::new(None, init_members, 0, 2, 0);
     let contract_acc_id = client
-        .instantiate("governance_v1", &ink_e2e::alice(), constructor, 0, None)
+        .instantiate("gov_settings", &ink_e2e::alice(), constructor, 0, None)
         .await
         .expect("instantiate failed")
         .account_id;
@@ -158,7 +158,7 @@ async fn e2e_can_propose(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
     let proposal = Proposal::default();
     let description = openbrush::traits::String::from("Test proposal");
 
-    let propose = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let propose = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.propose(proposal.clone(), description.clone()));
 
     let proposal_id = client
@@ -224,7 +224,7 @@ async fn e2e_can_propose(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
     assert_eq!(end_block, 4);
     assert_eq!(des, description);
 
-    let proposal_state = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.state(proposal_id));
 
     let proposal_state_res = client
@@ -243,7 +243,7 @@ async fn e2e_can_propose(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
         .await
         .unwrap();
 
-    let proposal_state = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.state(proposal_id));
 
     let proposal_state_res = client
@@ -273,9 +273,9 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
         voting_power: 1,
     };
     let init_members = vec![alice_member.clone(), bob_member.clone()];
-    let constructor = GovernorStructRef::new(None, init_members);
+    let constructor = ContractRef::new(None, init_members, 0, 2, 0);
     let contract_acc_id = client
-        .instantiate("governance_v1", &ink_e2e::alice(), constructor, 0, None)
+        .instantiate("gov_settings", &ink_e2e::alice(), constructor, 0, None)
         .await
         .expect("instantiate failed")
         .account_id;
@@ -284,7 +284,7 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
     let proposal = Proposal::default();
     let description = String::from("Test proposal");
 
-    let propose = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let propose = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.propose(proposal.clone(), description.clone().into()));
 
     // Propose
@@ -300,7 +300,7 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
 
     // Do an extrinsinc to advance the block (instant_finality)
     // TODO: delete if ink_e2e update
-    let proposal_state = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.state(proposal_id));
     client
         .call(&ink_e2e::bob(), proposal_state, 0, None)
@@ -308,7 +308,7 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
         .unwrap();
 
     // Build a vote(Against) message
-    let against_vote = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let against_vote = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.cast_vote(proposal_id, 1));
 
     // Cast Vote
@@ -320,7 +320,7 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
     // Assert that the vote was submitted
 
     // Build a has_voted message
-    let has_voted = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let has_voted = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.has_voted(proposal_id, alice));
 
     let has_voted_response = client
@@ -333,7 +333,7 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
     // Assert that the vote submitted is correct
 
     // Build a proposal_votes message
-    let proposal_votes = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let proposal_votes = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.proposal_votes(proposal_id));
 
     let proposal_votes_response = client
@@ -355,7 +355,7 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
 }
 
 // Test to cover the complete flow of Governor:
-// 1) Propose: a group member propose to add a new member
+// 1) Propose: a group member propose to set a new voting_period
 // 2) Vote: the proposal is voted in favour
 // 3) Execute: execute the succeeded proposal
 #[ink_e2e::test]
@@ -364,7 +364,6 @@ async fn e2e_can_propose_vote_execute(
 ) -> E2EResult<()> {
     let alice = ink_e2e::account_id(ink_e2e::AccountKeyring::Alice);
     let bob = ink_e2e::account_id(ink_e2e::AccountKeyring::Bob);
-    let charlie = ink_e2e::account_id(ink_e2e::AccountKeyring::Charlie);
 
     let alice_member = VotingMember {
         account: alice,
@@ -375,31 +374,22 @@ async fn e2e_can_propose_vote_execute(
         voting_power: 1,
     };
     let init_members = vec![alice_member.clone(), bob_member.clone()];
-    let constructor = GovernorStructRef::new(None, init_members);
+    let constructor = ContractRef::new(None, init_members, 0, 2, 0);
     let contract_acc_id = client
-        .instantiate("governance_v1", &ink_e2e::alice(), constructor, 0, None)
+        .instantiate("gov_settings", &ink_e2e::alice(), constructor, 0, None)
         .await
         .expect("instantiate failed")
         .account_id;
 
-    let charlie_member = VotingMember {
-        account: charlie,
-        voting_power: 1,
-    };
-
-    // Build the proposal to add a new member (charlie)
+    // Build the proposal to set a new voting period
 
     // Encode the parameters to pass in the selector (function)
-    let update_members = vec![charlie_member];
-    let remove_members: Vec<u8> = Vec::new();
+    let new_voting_period: u32 = 3;
 
-    let mut input = scale::Encode::encode(&update_members);
-    let mut input2 = scale::Encode::encode(&remove_members);
-
-    input.append(&mut input2);
+    let input = scale::Encode::encode(&new_voting_period);
 
     // Decode the selector hex 4 bytes
-    let selector_hex = "24990c25";
+    let selector_hex = "97a1433e";
     let selector = <[u8; 4]>::from_hex(selector_hex).expect("Decoding failed");
 
     let proposal = Proposal {
@@ -408,9 +398,10 @@ async fn e2e_can_propose_vote_execute(
         input,
         transferred_value: 0,
     };
-    let description = String::from("Test proposal");
-    let description_hash = Hash::try_from(blake2x256!("Test proposal")).unwrap();
-    let propose = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let description = String::from("Set a new voting period");
+    let description_hash =
+        Hash::try_from(blake2x256!("Set a new voting period")).unwrap();
+    let propose = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.propose(proposal.clone(), description.clone().into()));
 
     // Propose
@@ -426,7 +417,7 @@ async fn e2e_can_propose_vote_execute(
 
     // Do an extrinsinc to advance the block (instant_finality)
     // TODO: delete if ink_e2e update
-    let proposal_state = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.state(proposal_id));
     client
         .call(&ink_e2e::bob(), proposal_state, 0, None)
@@ -434,7 +425,7 @@ async fn e2e_can_propose_vote_execute(
         .unwrap();
 
     // Build a vote(For) message
-    let for_vote = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let for_vote = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.cast_vote(proposal_id, 2));
 
     // Cast Vote
@@ -445,14 +436,14 @@ async fn e2e_can_propose_vote_execute(
 
     // Do an extrinsinc to advance the block (instant_finality)
     // TODO: delete if ink_e2e update
-    let proposal_state = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.state(proposal_id));
     client
         .call(&ink_e2e::bob(), proposal_state, 0, None)
         .await
         .unwrap();
 
-    let proposal_state = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.state(proposal_id));
 
     let proposal_state_res = client
@@ -465,7 +456,7 @@ async fn e2e_can_propose_vote_execute(
     assert_eq!(proposal_state_res, ProposalState::Succeeded);
 
     // Execute
-    let execute = build_message::<GovernorStructRef>(contract_acc_id.clone())
+    let execute = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.execute(proposal.clone(), description_hash));
 
     client
@@ -473,17 +464,16 @@ async fn e2e_can_propose_vote_execute(
         .await
         .unwrap();
 
-    let get_members = build_message::<GovernorStructRef>(contract_acc_id.clone())
-        .call(|gov| gov.get_members(vec![charlie]));
+    let voting_period = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.voting_period());
 
-    let get_members_res = client
-        .call_dry_run(&ink_e2e::alice(), &get_members, 0, None)
+    let voting_period_res = client
+        .call_dry_run(&ink_e2e::alice(), &voting_period, 0, None)
         .await
-        .return_value()
-        .unwrap();
+        .return_value();
 
     // Assert that the member was add correctly
-    assert_eq!(get_members_res, vec![charlie_member]);
+    assert_eq!(voting_period_res, 3);
 
     Ok(())
 }

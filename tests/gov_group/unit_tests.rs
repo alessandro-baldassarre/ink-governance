@@ -11,7 +11,7 @@ use ink::{
     prelude::vec::Vec,
 };
 
-use crate::governance_v1::*;
+use crate::gov_group::*;
 use openbrush::{
     test_utils::{
         accounts,
@@ -24,13 +24,13 @@ use openbrush::{
     },
 };
 
-use openbrush_governance::{
+use ink_governance::{
     governor::*,
     governor_counting_simple::*,
     governor_voting_group::*,
 };
 
-type Event = <GovernorStruct as ::ink::reflect::ContractEventBase>::Type;
+type Event = <Contract as ::ink::reflect::ContractEventBase>::Type;
 
 fn default_accounts() -> DefaultAccounts<DefaultEnvironment> {
     accounts()
@@ -40,7 +40,7 @@ fn set_caller(sender: AccountId) {
     change_caller(sender)
 }
 
-fn build_contract() -> GovernorStruct {
+fn build_contract() -> Contract {
     let accounts = default_accounts();
 
     let alice_member = VotingMember {
@@ -56,7 +56,7 @@ fn build_contract() -> GovernorStruct {
 
     set_caller(accounts.alice);
 
-    GovernorStruct::new(None, init_members).unwrap()
+    Contract::new(None, init_members).unwrap()
 }
 
 fn decode_events(emittend_events: Vec<EmittedEvent>) -> Vec<Event> {
@@ -68,7 +68,7 @@ fn decode_events(emittend_events: Vec<EmittedEvent>) -> Vec<Event> {
         .collect()
 }
 
-fn propose(contract: &mut GovernorStruct) -> ProposalId {
+fn propose(contract: &mut Contract) -> ProposalId {
     let accounts = default_accounts();
 
     set_caller(accounts.bob);
@@ -77,7 +77,7 @@ fn propose(contract: &mut GovernorStruct) -> ProposalId {
     contract.propose(proposal, description).unwrap()
 }
 
-fn cast_against_vote(contract: &mut GovernorStruct, proposal_id: ProposalId) -> u64 {
+fn cast_against_vote(contract: &mut Contract, proposal_id: ProposalId) -> u64 {
     ink::env::test::advance_block::<DefaultEnvironment>();
     contract.cast_vote(proposal_id, 1).unwrap()
 }

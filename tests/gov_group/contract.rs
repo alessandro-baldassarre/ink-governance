@@ -1,7 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(min_specialization)]
 #[openbrush::contract]
-pub mod governance_v1 {
+pub mod gov_group {
+
     use ink::{
         codegen::{
             EmitEvent,
@@ -9,14 +10,14 @@ pub mod governance_v1 {
         },
         prelude::vec::Vec,
     };
-    use openbrush::traits::{
-        Storage,
-        String,
-    };
-    use openbrush_governance::{
+    use ink_governance::{
         governor::*,
         governor_counting_simple::*,
         governor_voting_group::*,
+    };
+    use openbrush::traits::{
+        Storage,
+        String,
     };
 
     /// Emitted when a proposal is create
@@ -90,7 +91,7 @@ pub mod governance_v1 {
 
     #[ink(storage)]
     #[derive(Default, Storage)]
-    pub struct GovernorStruct {
+    pub struct Contract {
         #[storage_field]
         governor: governor::Data<
             governor_counting_simple::Counting,
@@ -98,14 +99,14 @@ pub mod governance_v1 {
         >,
     }
 
-    impl Governor for GovernorStruct {}
+    impl Governor for Contract {}
 
-    impl VotingGroup for GovernorStruct {}
+    impl VotingGroup for Contract {}
 
-    impl CountingSimple for GovernorStruct {}
+    impl CountingSimple for Contract {}
 
     // Override the internal methods
-    impl governor::Internal for GovernorStruct {
+    impl governor::Internal for Contract {
         fn _voting_delay(&self) -> u32 {
             0 // block
         }
@@ -190,7 +191,7 @@ pub mod governance_v1 {
         }
     }
 
-    impl GovernorStruct {
+    impl Contract {
         /// Initialize the contract with a list of voting members and optional admin (if not set
         /// the caller will be the admin by default)
         #[ink(constructor)]

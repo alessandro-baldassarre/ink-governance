@@ -1,5 +1,5 @@
 [package]
-name          = "governance_v1"
+name          = "gov_settings"
 version       = "0.1.0"
 authors       = ["Alessandro Baldassarre <alessandro.baldassarre.dev@gmail.com>"]
 edition       = "2021"
@@ -9,21 +9,21 @@ documentation = "https://github.com/alessandro-baldassarre/ink-governance/crate#
 keywords      = ["blockchain", "polkadot", "ink"]
 
 [lib]
-name = "governance_v1"
+name = "gov_settings"
 path = "contract.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
 
-ink        = { version = "4.0.1", default-features = false }
-openbrush  = { git = "https://github.com/727-Ventures/openbrush-contracts", default-features = false, features = ["access_control"] }
+ink        = { version = "~4.0.0", default-features = false }
+openbrush  = { git = "https://github.com/727-Ventures/openbrush-contracts", default-features = false }
 scale      = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.3.1", default-features = false, features = ["derive"], optional = true }
 
-openbrush-governance = { path = "../../crate/", default-features = false, features = ["governor_v1"] }
+ink-governance = { path = "../../crate/", default-features = false, features = ["governor_v1", "governor_settings"] }
 
 [dev-dependencies]
-ink_e2e = { version = "4.0.1" } 
+ink_e2e = { version = "~4.0.0" } 
 hex = "0.4.3"
 
 [features]
@@ -32,9 +32,8 @@ std = [
     "ink/std",
     "scale/std",
     "scale-info/std",
-    # These dependencies
     "openbrush/std",
-    "openbrush-governance/std"
+    "ink-governance/std"
 ]
 
 ink-as-dependency = []
