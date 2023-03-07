@@ -7,7 +7,10 @@ use ink_governance::{
         *,
     },
 };
-use openbrush::contracts::psp22::psp22_external::PSP22;
+use openbrush::contracts::psp22::{
+    extensions::burnable::psp22burnable_external::PSP22Burnable,
+    psp22_external::PSP22,
+};
 
 use ink_e2e::build_message;
 
@@ -211,6 +214,113 @@ async fn e2e_can_delegate_votes(mut client: ink_e2e::Client<C, E>) -> E2EResult<
         .return_value()
         .unwrap();
     assert_eq!(delegatee_past_votes_res, 1000);
+
+    Ok(())
+}
+
+#[ink_e2e::test]
+async fn e2e_can_delegate_transfer_burn(
+    mut client: ink_e2e::Client<C, E>,
+) -> E2EResult<()> {
+    let alice = ink_e2e::account_id(ink_e2e::AccountKeyring::Alice);
+    let bob = ink_e2e::account_id(ink_e2e::AccountKeyring::Bob);
+    let charlie = ink_e2e::account_id(ink_e2e::AccountKeyring::Charlie);
+
+    // Instantiate
+    let constructor = ContractRef::new(1000);
+    let contract_acc_id = client
+        .instantiate("psp22_votes", &ink_e2e::alice(), constructor, 0, None)
+        .await
+        .expect("instantiate failed")
+        .account_id;
+
+    // Delegate votes from \\Alice to \\Bob
+    let delegate_votes = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.delegate(bob));
+    client
+        .call(&ink_e2e::alice(), delegate_votes, 0, None)
+        .await
+        .expect("delegate failed");
+
+    // Transfer from \\Alice to \\Bob
+    let transfer = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.transfer(bob, 100, Vec::default()));
+    client
+        .call(&ink_e2e::alice(), transfer, 0, None)
+        .await
+        .expect("transfer failed");
+
+    // Redelegate \\Alice votes to themself
+    let delegate_votes = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.delegate(alice));
+    client
+        .call(&ink_e2e::alice(), delegate_votes, 0, None)
+        .await
+        .expect("delegate failed");
+
+    // Get \\Alice votes
+    let alice_votes = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.get_votes(alice));
+    let alice_votes_res = client
+        .call_dry_run(&ink_e2e::alice(), &alice_votes, 0, None)
+        .await
+        .return_value()
+        .unwrap();
+    assert_eq!(alice_votes_res, 900);
+
+    // Get \\Bob votes
+    let bob_votes = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.get_votes(bob));
+    let bob_votes_res = client
+        .call_dry_run(&ink_e2e::alice(), &bob_votes, 0, None)
+        .await
+        .return_value()
+        .unwrap();
+    assert_eq!(bob_votes_res, 100);
+
+    // Delegate \\Alice votes to \\Charlie
+    let delegate_votes = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.delegate(charlie));
+    client
+        .call(&ink_e2e::alice(), delegate_votes, 0, None)
+        .await
+        .expect("delegate failed");
+
+    // Burn
+    let burn = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.burn(alice, 100));
+    client
+        .call(&ink_e2e::alice(), burn, 0, None)
+        .await
+        .expect("burn failed");
+
+    // Get \\Charlie(delegatee) votes
+    let charlie_votes = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.get_votes(charlie));
+    let charlie_votes_res = client
+        .call_dry_run(&ink_e2e::alice(), &charlie_votes, 0, None)
+        .await
+        .return_value()
+        .unwrap();
+    assert_eq!(charlie_votes_res, 800);
+
+    // Get \\Charlie(delegatee) balance
+    let charlie_balance = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.balance_of(charlie));
+    let charlie_balance_res = client
+        .call_dry_run(&ink_e2e::alice(), &charlie_balance, 0, None)
+        .await
+        .return_value();
+    assert_eq!(charlie_balance_res, 0);
+
+    // Get \\Alice(delegator) balance
+    let alice_balance = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.balance_of(alice));
+    let alice_balance_res = client
+        .call_dry_run(&ink_e2e::alice(), &alice_balance, 0, None)
+        .await
+        .return_value();
+    assert_eq!(alice_balance_res, 800);
 
     Ok(())
 }
