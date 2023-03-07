@@ -27,9 +27,6 @@ impl From<VotesError> for PSP22VotesError {
             VotesError::NotMinedBlock => {
                 PSP22VotesError::Custom(String::from("Votes:NotMinedBlock"))
             }
-            VotesError::ZeroDelegatesAccount => {
-                PSP22VotesError::Custom(String::from("Votes::ZeroDelegatesAccount"))
-            }
             VotesError::NoCheckpoint => {
                 PSP22VotesError::Custom(String::from("Votes::NoCheckpoint"))
             }
@@ -42,7 +39,7 @@ impl From<VotesError> for PSP22VotesError {
             VotesError::BalanceToVoteErr => {
                 PSP22VotesError::Custom(String::from("Votes::BalanceToVoteErr"))
             }
-            VotesError::Custom(string) => PSP22VotesError::Custom(String::from(string)),
+            VotesError::Custom(string) => PSP22VotesError::Custom(string),
         }
     }
 }

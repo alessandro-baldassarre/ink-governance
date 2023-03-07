@@ -26,7 +26,7 @@ pub mod psp22_votes {
         #[ink(topic)]
         pub delegator: AccountId,
         /// Account id of the previous delegatee.
-        pub from_delegate: AccountId,
+        pub from_delegate: Option<AccountId>,
         /// Account id of the new delegatee.
         pub to_delegate: AccountId,
     }
@@ -74,9 +74,9 @@ pub mod psp22_votes {
     impl votes::Internal for Contract {
         fn _emit_delegate_changed(
             &self,
-            delegator: openbrush::traits::AccountId,
-            from_delegate: openbrush::traits::AccountId,
-            to_delegate: openbrush::traits::AccountId,
+            delegator: AccountId,
+            from_delegate: Option<AccountId>,
+            to_delegate: AccountId,
         ) {
             self.env().emit_event(DelegateChanged {
                 delegator,
@@ -86,9 +86,9 @@ pub mod psp22_votes {
         }
         fn _emit_delegate_votes_changed(
             &self,
-            delegate: openbrush::traits::AccountId,
-            previous_balance: openbrush::traits::Balance,
-            new_balance: openbrush::traits::Balance,
+            delegate: AccountId,
+            previous_balance: Balance,
+            new_balance: Balance,
         ) {
             self.env().emit_event(DelegateVotesChanged {
                 delegate,

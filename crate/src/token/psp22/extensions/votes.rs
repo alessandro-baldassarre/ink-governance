@@ -28,7 +28,6 @@ use openbrush::{
         OccupiedStorage,
         Storage,
         String,
-        ZERO_ADDRESS,
     },
 };
 
@@ -52,9 +51,8 @@ where
     T: OccupiedStorage<{ STORAGE_KEY }, WithData = Data>
         + OccupiedStorage<{ psp22::STORAGE_KEY }, WithData = psp22::Data>,
 {
-    default fn delegates(&self, account: AccountId) -> Result<AccountId, VotesError> {
-        let delegate_account = self._delegates(&account)?;
-        Ok(delegate_account)
+    default fn delegates(&self, account: AccountId) -> Option<AccountId> {
+        self._delegates(&account)
     }
 
     default fn get_votes(&self, account: AccountId) -> Result<Vote, VotesError> {
@@ -155,7 +153,7 @@ pub trait Internal {
     fn _emit_delegate_changed(
         &self,
         _delegator: AccountId,
-        _from_delegate: AccountId,
+        _from_delegate: Option<AccountId>,
         _to_delegate: AccountId,
     );
 
@@ -173,7 +171,7 @@ pub trait Internal {
         account: &AccountId,
     ) -> Result<Vec<Checkpoint>, VotesError>;
 
-    fn _delegates(&self, account: &AccountId) -> Result<AccountId, VotesError>;
+    fn _delegates(&self, account: &AccountId) -> Option<AccountId>;
 
     fn _get_votes(&self, account: &AccountId) -> Result<u64, VotesError>;
 
@@ -191,8 +189,8 @@ pub trait Internal {
 
     fn _move_voting_power(
         &mut self,
-        source: &AccountId,
-        destination: &AccountId,
+        source: &Option<AccountId>,
+        destination: &Option<AccountId>,
         amount: &Balance,
     ) -> Result<(), VotesError>;
 
@@ -222,7 +220,7 @@ where
     default fn _emit_delegate_changed(
         &self,
         _delegator: AccountId,
-        _from_delegate: AccountId,
+        _from_delegate: Option<AccountId>,
         _to_delegate: AccountId,
     ) {
     }
@@ -248,14 +246,8 @@ where
 
         Ok(checkpoints)
     }
-    default fn _delegates(&self, account: &AccountId) -> Result<AccountId, VotesError> {
-        let delegate_account = self
-            .data::<Data>()
-            .delegates
-            .get(account)
-            .ok_or(VotesError::ZeroDelegatesAccount)?;
-
-        Ok(delegate_account)
+    default fn _delegates(&self, account: &AccountId) -> Option<AccountId> {
+        self.data::<Data>().delegates.get(account)
     }
 
     #[inline]
@@ -289,28 +281,29 @@ where
         delegator: &AccountId,
         delegatee: &AccountId,
     ) -> Result<(), VotesError> {
-        let current_delegate = self._delegates(delegator).unwrap_or(*delegator);
+        let current_delegate = self._delegates(delegator).or(Some(*delegator));
         let delegator_balance = self.data::<psp22::Data>()._balance_of(delegator);
         self.data::<Data>().delegates.insert(delegator, delegatee);
 
-        self._move_voting_power(&current_delegate, delegatee, &delegator_balance)?;
+        self._move_voting_power(
+            &current_delegate,
+            &Some(*delegatee),
+            &delegator_balance,
+        )?;
         self._emit_delegate_changed(*delegator, current_delegate, *delegatee);
 
         Ok(())
     }
     default fn _move_voting_power(
         &mut self,
-        source: &AccountId,
-        destination: &AccountId,
+        source: &Option<AccountId>,
+        destination: &Option<AccountId>,
         amount: &Balance,
     ) -> Result<(), VotesError> {
-        if source == destination {
-            return Err(VotesError::MovePowerAccountsError)
-        }
         if amount <= &0 {
             return Err(VotesError::MovePowerAmountError)
         }
-        if source != &ZERO_ADDRESS.into() {
+        if let Some(source) = source {
             let (old_weight, new_weight) = self._write_checkpoint(
                 Some(source),
                 |a: Vote, b: Vote| -> Vote { a - b },
@@ -322,7 +315,7 @@ where
                 new_weight.into(),
             );
         }
-        if destination != &ZERO_ADDRESS.into() {
+        if let Some(destination) = destination {
             let (old_weight, new_weight) = self._write_checkpoint(
                 Some(destination),
                 |a: Vote, b: Vote| -> Vote { a + b },
@@ -396,8 +389,8 @@ where
         match (from, to) {
             (Some(from), Some(to)) => {
                 self._move_voting_power(
-                    &self.delegates(*from).unwrap_or(ZERO_ADDRESS.into()),
-                    &self.delegates(*to).unwrap_or(ZERO_ADDRESS.into()),
+                    &self.delegates(*from).or(Some(*from)),
+                    &self.delegates(*to).or(Some(*to)),
                     amount,
                 )?;
                 return Ok(())
@@ -408,7 +401,11 @@ where
                     |a: Vote, b: Vote| -> Vote { a - b },
                     amount,
                 )?;
-                self._move_voting_power(from, &ZERO_ADDRESS.into(), amount)?;
+                self._move_voting_power(
+                    &self.delegates(*from).or(Some(*from)),
+                    &None,
+                    amount,
+                )?;
                 return Ok(())
             }
             (None, Some(to)) => {
@@ -417,7 +414,11 @@ where
                     |a: Vote, b: Vote| -> Vote { a + b },
                     amount,
                 )?;
-                self._move_voting_power(&ZERO_ADDRESS.into(), to, amount)?;
+                self._move_voting_power(
+                    &None,
+                    &self.delegates(*to).or(Some(*to)),
+                    amount,
+                )?;
 
                 return Ok(())
             }
