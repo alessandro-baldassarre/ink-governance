@@ -4,6 +4,7 @@ use crate::traits::errors::{
 };
 pub use crate::{
     psp22::extensions::votes::Internal as _,
+    token::psp22::extensions::votes,
     traits::{
         governance::utils::votes::*,
         token::psp22::extensions::votes::*,
@@ -72,7 +73,7 @@ where
 
         let checkpoints = self._get_checkpoints(&account)?;
 
-        let past_votes = self._get_past_votes(&checkpoints, &block_number)?;
+        let past_votes = self._get_past_votes(&checkpoints, &block_number);
 
         Ok(past_votes)
     }
@@ -88,7 +89,7 @@ where
         let past_total_supply = self._get_past_votes(
             &self.data::<Data>().total_supply_checkpoints,
             &block_number,
-        )?;
+        );
 
         Ok(past_total_supply)
     }
@@ -115,7 +116,7 @@ where
             .data::<Data>()
             .checkpoints
             .get(&account)
-            .ok_or(PSP22VotesError::from(VotesError::NoCheckpoint))?;
+            .ok_or(PSP22VotesError::VotesError(VotesError::NoCheckpoint))?;
 
         // TODO: create utils for safe convertion
         let index = u32_to_usize(pos).ok_or(PSP22VotesError::ConvertionError {
@@ -149,6 +150,24 @@ where
 }
 
 pub trait Internal {
+    /// User must override those methods in their contract.
+    /// Emitted when an account changes their delegate.
+    fn _emit_delegate_changed(
+        &self,
+        _delegator: AccountId,
+        _from_delegate: AccountId,
+        _to_delegate: AccountId,
+    );
+
+    /// Emitted when a token transfer or delegate change results in changes to a delegate's number
+    /// of votes.
+    fn _emit_delegate_votes_changed(
+        &self,
+        _delegate: AccountId,
+        _previous_balance: Balance,
+        _new_balance: Balance,
+    );
+
     fn _get_checkpoints(
         &self,
         account: &AccountId,
@@ -162,7 +181,7 @@ pub trait Internal {
         &self,
         checkpoints: &[Checkpoint],
         block_number: &BlockNumber,
-    ) -> Result<u64, VotesError>;
+    ) -> Vote;
 
     fn _delegate(
         &mut self,
@@ -191,7 +210,7 @@ pub trait Internal {
         from: Option<&AccountId>,
         to: Option<&AccountId>,
         amount: &Balance,
-    ) -> Result<(), VotesError>;
+    ) -> Result<(), PSP22VotesError>;
 }
 
 impl<T> Internal for T
@@ -200,6 +219,22 @@ where
     T: OccupiedStorage<{ STORAGE_KEY }, WithData = Data>
         + OccupiedStorage<{ psp22::STORAGE_KEY }, WithData = psp22::Data>,
 {
+    default fn _emit_delegate_changed(
+        &self,
+        _delegator: AccountId,
+        _from_delegate: AccountId,
+        _to_delegate: AccountId,
+    ) {
+    }
+
+    default fn _emit_delegate_votes_changed(
+        &self,
+        _delegate: AccountId,
+        _previous_balance: Balance,
+        _new_balance: Balance,
+    ) {
+    }
+
     #[inline]
     default fn _get_checkpoints(
         &self,
@@ -237,16 +272,16 @@ where
         &self,
         checkpoints: &[Checkpoint],
         block_number: &BlockNumber,
-    ) -> Result<Vote, VotesError> {
+    ) -> Vote {
         let votes = match checkpoints
-            .partition_point(|checkpoint| &checkpoint.from_block < block_number)
+            .partition_point(|checkpoint| &checkpoint.from_block <= block_number)
             .checked_sub(1)
         {
             Some(index) => checkpoints[index].votes,
             None => 0,
         };
 
-        Ok(votes)
+        votes
     }
 
     default fn _delegate(
@@ -258,9 +293,8 @@ where
         let delegator_balance = self.data::<psp22::Data>()._balance_of(delegator);
         self.data::<Data>().delegates.insert(delegator, delegatee);
 
-        // TODO:
-        // emit delegate_changed
         self._move_voting_power(&current_delegate, delegatee, &delegator_balance)?;
+        self._emit_delegate_changed(*delegator, current_delegate, *delegatee);
 
         Ok(())
     }
@@ -277,20 +311,28 @@ where
             return Err(VotesError::MovePowerAmountError)
         }
         if source != &ZERO_ADDRESS.into() {
-            let (_old_weight, _new_weight) = self._write_checkpoint(
+            let (old_weight, new_weight) = self._write_checkpoint(
                 Some(source),
                 |a: Vote, b: Vote| -> Vote { a - b },
                 amount,
             )?;
-            //_emit_delegate_vote_changed
+            self._emit_delegate_votes_changed(
+                *source,
+                old_weight.into(),
+                new_weight.into(),
+            );
         }
         if destination != &ZERO_ADDRESS.into() {
-            let (_old_weight, _new_weight) = self._write_checkpoint(
+            let (old_weight, new_weight) = self._write_checkpoint(
                 Some(destination),
                 |a: Vote, b: Vote| -> Vote { a + b },
                 amount,
             )?;
-            //_emit_delegate_vote_changed
+            self._emit_delegate_votes_changed(
+                *destination,
+                old_weight.into(),
+                new_weight.into(),
+            );
         }
         Ok(())
     }
@@ -350,7 +392,7 @@ where
         from: Option<&AccountId>,
         to: Option<&AccountId>,
         amount: &Balance,
-    ) -> Result<(), VotesError> {
+    ) -> Result<(), PSP22VotesError> {
         match (from, to) {
             (Some(from), Some(to)) => {
                 self._move_voting_power(
@@ -379,7 +421,11 @@ where
 
                 return Ok(())
             }
-            _ => return Err(VotesError::MovePowerAmountError),
+            _ => {
+                return Err(PSP22VotesError::VotesError(
+                    VotesError::MovePowerAmountError,
+                ))
+            }
         }
     }
 }
