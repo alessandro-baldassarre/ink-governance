@@ -36,9 +36,9 @@ pub trait Votes {
         block_number: BlockNumber,
     ) -> Result<Vote, VotesError>;
 
-    /// Returns the delegate that `account` has chosen.
+    /// Returns the delegate that `account` has chosen or None if there is not delegator
     #[ink(message)]
-    fn delegates(&self, account: AccountId) -> Result<AccountId, VotesError>;
+    fn delegates(&self, account: AccountId) -> Option<AccountId>;
 
     /// Delegates votes from the sender to `delegatee`.
     #[ink(message)]

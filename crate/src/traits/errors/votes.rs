@@ -7,8 +7,6 @@ pub enum VotesError {
     Custom(String),
     /// Returns when a block is not yet mined.
     NotMinedBlock,
-    /// Returns when no delegates account was found
-    ZeroDelegatesAccount,
     /// Returns when no checkpoints was found for that account
     ZeroCheckpoints,
     /// Returns when no checkpoint was found for that block time
