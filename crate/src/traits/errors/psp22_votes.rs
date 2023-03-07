@@ -42,7 +42,7 @@ impl From<VotesError> for PSP22VotesError {
             VotesError::BalanceToVoteErr => {
                 PSP22VotesError::Custom(String::from("Votes::BalanceToVoteErr"))
             }
-            VotesError::Custom(string) => PSP22VotesError::Custom(String::from(string)),
+            VotesError::Custom(string) => PSP22VotesError::Custom(string),
         }
     }
 }
