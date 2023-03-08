@@ -1,3 +1,4 @@
+pub use crate::governance::modules::voter;
 use openbrush::traits::{
     AccountId,
     BlockNumber,
@@ -19,4 +20,15 @@ pub trait Voter {
         block_number: BlockNumber,
         params: &[u8],
     ) -> Option<u64>;
+}
+
+impl Voter for Voting {
+    default fn _get_votes(
+        &self,
+        _account: &AccountId,
+        _block_number: BlockNumber,
+        _params: &[u8],
+    ) -> Option<u64> {
+        None
+    }
 }

@@ -1,4 +1,7 @@
-use openbrush::traits::AccountId;
+use openbrush::traits::{
+    AccountId,
+    String,
+};
 
 use crate::traits::{
     errors::CountingError,
@@ -31,4 +34,29 @@ pub trait Counter {
         weight: u64,
         params: &[u8],
     ) -> Result<(), CountingError>;
+}
+
+impl Counter for Counting {
+    default fn _quorum_reached(
+        &self,
+        _proposal_id: &ProposalId,
+    ) -> Result<bool, CountingError> {
+        Err(CountingError::Custom(String::from("No module")))
+    }
+    default fn _vote_succeeded(
+        &self,
+        _proposal_id: &ProposalId,
+    ) -> Result<bool, CountingError> {
+        Err(CountingError::Custom(String::from("No module")))
+    }
+    default fn _count_vote(
+        &mut self,
+        _proposal_id: &ProposalId,
+        _account: &AccountId,
+        _support: u8,
+        _weight: u64,
+        _params: &[u8],
+    ) -> Result<(), CountingError> {
+        Err(CountingError::Custom(String::from("No module")))
+    }
 }

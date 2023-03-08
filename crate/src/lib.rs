@@ -9,6 +9,12 @@ mod token;
 #[cfg(feature = "governor")]
 pub use governance::governor;
 
+#[cfg(feature = "governor")]
+pub use governance::modules::voter;
+
+#[cfg(feature = "governor")]
+pub use governance::modules::counter;
+
 #[cfg(feature = "governor_settings")]
 pub use governance::extensions::governor_settings;
 
