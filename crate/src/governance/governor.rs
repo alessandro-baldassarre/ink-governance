@@ -149,7 +149,7 @@ where
 
         let snapshot = self.proposal_snapshot(proposal_id)?;
 
-        if snapshot >= Self::env().block_number() {
+        if snapshot > Self::env().block_number() {
             return Ok(ProposalState::Pending)
         }
 
@@ -213,10 +213,8 @@ where
         proposal: Proposal,
         description: String,
     ) -> Result<ProposalId, GovernorError> {
-        if self.get_votes(
-            Self::env().caller(),
-            Self::env().block_number().saturating_sub(1),
-        )? <= self._proposal_threshold()
+        if self.get_votes(Self::env().caller(), Self::env().block_number())?
+            <= self._proposal_threshold()
         {
             return Err(GovernorError::BelowThreshold)
         }
@@ -711,20 +709,17 @@ where
             .get(proposal_id)
             .ok_or(GovernorError::ProposalNotFound)?;
 
-        let weight = self
-            .data()
-            ._get_votes(account, proposal_core.vote_start, params)?;
-
         match self.state(*proposal_id)? {
             ProposalState::Active => {}
             _ => return Err(GovernorError::ProposalNotActive),
         }
 
-        self.data()
-            ._count_vote(proposal_id, account, support, weight, params);
+        let weight = self._get_votes(account, proposal_core.vote_start, params)?;
+
+        self._count_vote(proposal_id, account, support, weight, params);
 
         if params.is_empty() {
-            self.data()._emit_vote_cast(
+            self._emit_vote_cast(
                 *account,
                 *proposal_id,
                 support,
@@ -732,7 +727,7 @@ where
                 reason.to_vec(),
             );
         } else {
-            self.data()._emit_vote_cast_with_params(
+            self._emit_vote_cast_with_params(
                 *account,
                 *proposal_id,
                 support,

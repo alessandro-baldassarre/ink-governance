@@ -35,6 +35,8 @@ governor_voting_group = []
 
 psp22_votes = []
 
-governor_v1 = ["governor","governor_counting_simple","governor_voting_group"]
+governor_group = ["governor","governor_counting_simple","governor_voting_group"]
+governor_psp22 = ["governor","governor_counting_simple","psp22_votes"]
+
 
 

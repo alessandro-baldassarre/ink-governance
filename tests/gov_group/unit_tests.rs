@@ -78,7 +78,6 @@ fn propose(contract: &mut Contract) -> ProposalId {
 }
 
 fn cast_against_vote(contract: &mut Contract, proposal_id: ProposalId) -> u64 {
-    ink::env::test::advance_block::<DefaultEnvironment>();
     contract.cast_vote(proposal_id, 1).unwrap()
 }
 
@@ -200,14 +199,6 @@ fn propose_works() {
         panic!("encountered unexpected event kind: expected a ProposalCreated event")
     }
 
-    // In this case it is right that the proposal remains pending because since the number of blocks does not increase automatically,
-    // the proposal does not even start
-    let proposal_state = ProposalState::Pending;
-    let response = contract.state(proposal_id).unwrap();
-    assert_eq!(response, proposal_state);
-
-    // then advance one block (note: we set voting_delay = 0 blocks)
-    ink::env::test::advance_block::<DefaultEnvironment>();
     let proposal_state = ProposalState::Active;
     let response = contract.state(proposal_id).unwrap();
     assert_eq!(response, proposal_state);
@@ -226,13 +217,7 @@ fn cast_vote_works() {
     let response = contract.cast_vote(proposal_id, 1).unwrap_err();
     assert_eq!(response, GovernorError::NoVotes);
 
-    // In this case alice is part of the group but the proposal is not yet active.
     set_caller(accounts.alice);
-    let err_response = contract.cast_vote(proposal_id, 1).unwrap_err();
-    assert_eq!(err_response, GovernorError::ProposalNotActive);
-
-    // then advance one block (note: we set vote_delay = 0 blocks)
-    ink::env::test::advance_block::<DefaultEnvironment>();
     let response = contract.cast_vote(proposal_id, 1).unwrap();
     assert_eq!(response, 1);
 

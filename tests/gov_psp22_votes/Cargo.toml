@@ -1,5 +1,5 @@
 [package]
-name          = "gov_settings"
+name          = "gov_psp22_votes"
 version       = "0.1.0"
 authors       = ["Alessandro Baldassarre <alessandro.baldassarre.dev@gmail.com>"]
 edition       = "2021"
@@ -9,7 +9,7 @@ documentation = "https://github.com/alessandro-baldassarre/ink-governance/crate#
 keywords      = ["blockchain", "polkadot", "ink"]
 
 [lib]
-name = "gov_settings"
+name = "gov_psp22_votes"
 path = "contract.rs"
 crate-type = ["cdylib"]
 
@@ -20,7 +20,7 @@ openbrush  = { git = "https://github.com/727-Ventures/openbrush-contracts", defa
 scale      = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.3.1", default-features = false, features = ["derive"], optional = true }
 
-ink-governance = { path = "../../crate/", default-features = false, features = ["governor_group", "governor_settings"] }
+ink-governance = { path = "../../crate/", default-features = false, features = ["governor_psp22"] }
 
 [dev-dependencies]
 ink_e2e = { version = "~4.0.0" } 

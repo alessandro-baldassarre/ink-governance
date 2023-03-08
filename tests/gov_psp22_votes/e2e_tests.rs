@@ -233,6 +233,25 @@ async fn e2e_can_propose(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
         .return_value()
         .unwrap();
 
+    // The proposal must be pending until the next block
+    assert_eq!(proposal_state_res, ProposalState::Pending);
+
+    // Do an extrinsinc to advance the block (instant_finality)
+    // TODO: delete if ink_e2e update
+    client
+        .call(&ink_e2e::bob(), proposal_state, 0, None)
+        .await
+        .unwrap();
+
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.state(proposal_id));
+
+    let proposal_state_res = client
+        .call_dry_run(&ink_e2e::bob(), &proposal_state, 0, None)
+        .await
+        .return_value()
+        .unwrap();
+
     // Assert the proposal is active
     assert_eq!(proposal_state_res, ProposalState::Active);
 
@@ -276,6 +295,15 @@ async fn e2e_can_cast_vote(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
         .unwrap();
     client
         .call(&ink_e2e::bob(), propose, 0, None)
+        .await
+        .unwrap();
+
+    // Do an extrinsinc to advance the block (instant_finality)
+    // TODO: delete if ink_e2e update
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.state(proposal_id));
+    client
+        .call(&ink_e2e::bob(), proposal_state, 0, None)
         .await
         .unwrap();
 
@@ -396,6 +424,15 @@ async fn e2e_can_propose_vote_execute(
         .await
         .unwrap();
 
+    // Do an extrinsinc to advance the block (instant_finality)
+    // TODO: delete if ink_e2e update
+    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
+        .call(|gov| gov.state(proposal_id));
+    client
+        .call(&ink_e2e::bob(), proposal_state, 0, None)
+        .await
+        .unwrap();
+
     // Build a vote(For) message
     let for_vote = build_message::<ContractRef>(contract_acc_id.clone())
         .call(|gov| gov.cast_vote(proposal_id, 2));
@@ -403,15 +440,6 @@ async fn e2e_can_propose_vote_execute(
     // Cast Vote
     client
         .call(&ink_e2e::alice(), for_vote, 0, None)
-        .await
-        .unwrap();
-
-    // Do an extrinsinc to advance the block (instant_finality)
-    // TODO: delete if ink_e2e update
-    let proposal_state = build_message::<ContractRef>(contract_acc_id.clone())
-        .call(|gov| gov.state(proposal_id));
-    client
-        .call(&ink_e2e::bob(), proposal_state, 0, None)
         .await
         .unwrap();
 
