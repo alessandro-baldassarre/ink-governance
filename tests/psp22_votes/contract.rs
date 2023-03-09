@@ -7,7 +7,7 @@ pub mod psp22_votes {
         EmitEvent,
         Env,
     };
-    use ink_governance::psp22::extensions::votes::*;
+    use ink_governance::psp22_votes::*;
     use openbrush::{
         contracts::psp22::{
             extensions::burnable::*,
@@ -48,7 +48,7 @@ pub mod psp22_votes {
     #[derive(Default, Storage)]
     pub struct Contract {
         #[storage_field]
-        psp22_votes: votes::Data,
+        psp22_votes: psp22_votes::Data,
         #[storage_field]
         psp22: psp22::Data,
     }
@@ -71,7 +71,7 @@ pub mod psp22_votes {
         }
     }
 
-    impl votes::Internal for Contract {
+    impl psp22_votes::Internal for Contract {
         fn _emit_delegate_changed(
             &self,
             delegator: AccountId,

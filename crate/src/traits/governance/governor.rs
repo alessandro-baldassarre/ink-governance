@@ -23,6 +23,7 @@ pub enum ProposalState {
     Executed,
 }
 
+/// Hash type which identifies an unique id for a proposal
 pub type ProposalId = Hash;
 
 /// A Proposal is what can be proposed
@@ -50,9 +51,11 @@ impl Default for Proposal {
     }
 }
 
+/// Wrapper to simplify cross-contract call
 #[openbrush::wrapper]
 pub type GovernorRef = dyn Governor;
 
+/// Trait definition of the core module of the ink_governance modular system.
 #[openbrush::trait_definition]
 pub trait Governor {
     /// Hashing function used to (re)build the proposal id from the proposal details. Returns the generated proposal id.
@@ -60,6 +63,8 @@ pub trait Governor {
     fn hash_proposal(&self, proposal: Proposal, description_hash: Hash) -> ProposalId;
 
     /// Returns the current state of a proposal
+    ///
+    /// Errors if a
     #[ink(message)]
     fn state(&self, proposal_id: ProposalId) -> Result<ProposalState, GovernorError>;
 

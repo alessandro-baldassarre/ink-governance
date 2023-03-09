@@ -8,9 +8,11 @@ use crate::traits::errors::VotesError;
 
 pub type Vote = u64;
 
+/// Wrapper to simplify cross-contract call
 #[openbrush::wrapper]
 pub type VotesRef = dyn Votes;
 
+/// Trait definition for all contract that use votes extract system.
 #[openbrush::trait_definition]
 pub trait Votes {
     /// Returns the current amount of votes that `account` has.

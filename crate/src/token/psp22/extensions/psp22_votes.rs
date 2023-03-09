@@ -3,8 +3,8 @@ use crate::traits::errors::{
     VotesError,
 };
 pub use crate::{
-    psp22::extensions::votes::Internal as _,
-    token::psp22::extensions::votes,
+    psp22_votes,
+    psp22_votes::Internal as _,
     traits::{
         governance::utils::votes::*,
         token::psp22::extensions::votes::*,

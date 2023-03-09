@@ -6,6 +6,7 @@ use crate::traits::errors::GovernorError;
 #[openbrush::wrapper]
 pub type GovernorSettingsRef = dyn GovernorSettings;
 
+/// Trait definition of extension of Governor for settings updatable through governance.
 #[openbrush::trait_definition]
 pub trait GovernorSettings {
     /// Update the voting delay. This operation can only be performed through a governance proposal

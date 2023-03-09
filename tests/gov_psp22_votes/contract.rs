@@ -9,7 +9,7 @@ pub mod gov_psp22_votes {
         voter::*,
     };
 
-    use ink_governance::psp22::extensions::votes::*;
+    use ink_governance::psp22_votes::*;
     use openbrush::{
         contracts::psp22::{
             extensions::burnable::*,
@@ -27,7 +27,7 @@ pub mod gov_psp22_votes {
         #[storage_field]
         governor: governor::Data<governor_counting_simple::Counting, voter::Voting>,
         #[storage_field]
-        psp22_votes: votes::Data,
+        psp22_votes: psp22_votes::Data,
         #[storage_field]
         psp22: psp22::Data,
     }
