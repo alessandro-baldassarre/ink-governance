@@ -69,6 +69,10 @@ pub mod gov_psp22_votes {
             let votes = self
                 .get_past_votes(*account, block_number)
                 .map_err(|_| GovernorError::NoVotes)?;
+            // for explicity error
+            if votes == 0 {
+                return Err(GovernorError::NoVotes)
+            }
             Ok(votes)
         }
     }
