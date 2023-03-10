@@ -11,7 +11,7 @@
 //! Example of Cargo.toml
 //!
 //!
-//! ```rust
+//! ```ignore
 //! [dependencies]
 //!
 //! ink        = { version = "~4.0.0", default-features = false }
@@ -30,7 +30,7 @@
 //!    "ink/std",
 //!    "scale/std",
 //!    "scale-info/std",
-//!   "openbrush/std",
+//!    "openbrush/std",
 //!    "ink-governance/std"
 //! ]
 //!
@@ -62,7 +62,7 @@
 //!
 //! You can find complete implementations in the [tests](https://github.com/alessandro-baldassarre/ink-governance/tree/main/tests) folder.
 //!
-//! ```rust
+//! ```ignore
 //! #[openbrush::contract]
 //! pub mod gov_group {
 //!
