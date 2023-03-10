@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(min_specialization)]
 
+/// Traits definition and wrappers used in ink_governance contracts
 pub mod traits;
 
 mod governance;
@@ -25,4 +26,4 @@ pub use governance::modules::governor_counting_simple;
 pub use governance::modules::governor_voting_group;
 
 #[cfg(feature = "psp22_votes")]
-pub use token::psp22;
+pub use token::psp22::extensions::psp22_votes;

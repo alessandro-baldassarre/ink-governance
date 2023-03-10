@@ -2,7 +2,7 @@ use crate::psp22_votes::*;
 
 use ink_governance::{
     governor::utils::votes::votes_external::Votes,
-    psp22::extensions::votes::{
+    psp22_votes::{
         psp22votes_external::PSP22Votes,
         *,
     },

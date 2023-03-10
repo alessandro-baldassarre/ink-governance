@@ -26,9 +26,11 @@ impl Default for VotingMember {
     }
 }
 
+/// Wrapper to simplify cross-contract call
 #[openbrush::wrapper]
 pub type VotingGroupRef = dyn VotingGroup;
 
+/// Trait definition of voting group module.
 #[openbrush::trait_definition]
 pub trait VotingGroup {
     /// Update one or more existing voter members

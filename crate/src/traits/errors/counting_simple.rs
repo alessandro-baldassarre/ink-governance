@@ -9,6 +9,7 @@ use openbrush::{
 
 use super::GovernorError;
 
+/// The counting simple module error type.
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub enum CountingSimpleError {

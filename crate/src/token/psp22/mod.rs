@@ -1,3 +1,4 @@
 pub mod extensions {
-    pub mod votes;
+    /// Implementation of psp22 votes extension.
+    pub mod psp22_votes;
 }

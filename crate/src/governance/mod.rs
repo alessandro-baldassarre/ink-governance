@@ -1,3 +1,4 @@
+/// Implementation of core governor module.
 #[cfg(feature = "governor")]
 pub mod governor;
 

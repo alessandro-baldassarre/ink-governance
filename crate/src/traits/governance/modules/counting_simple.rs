@@ -48,6 +48,7 @@ pub struct ProposalVote {
 #[openbrush::wrapper]
 pub type CountingSimpleRef = dyn CountingSimple;
 
+/// Trait definition of counting simple module.
 #[openbrush::trait_definition]
 pub trait CountingSimple {
     #[ink(message)]

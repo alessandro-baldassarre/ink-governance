@@ -7,7 +7,7 @@ use ink::{
     },
 };
 
-use ink_governance::psp22::extensions::votes::*;
+use ink_governance::psp22_votes::*;
 use openbrush::{
     contracts::psp22::*,
     traits::Balance,

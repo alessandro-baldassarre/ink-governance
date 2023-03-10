@@ -1,7 +1,7 @@
 use ink::LangError;
 use openbrush::traits::String;
 
-/// The Governor error type. Contract will throw one of this errors.
+/// The Governor module error type.
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub enum GovernorError {
