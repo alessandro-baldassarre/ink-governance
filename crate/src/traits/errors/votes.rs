@@ -1,6 +1,6 @@
 use openbrush::traits::String;
 
-/// The Votes module error type.
+/// Votes module error type.
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub enum VotesError {

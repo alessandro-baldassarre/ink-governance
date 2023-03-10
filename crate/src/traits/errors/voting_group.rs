@@ -8,7 +8,7 @@ use openbrush::{
 
 use super::GovernorError;
 
-/// The VotingGroup module error type.
+/// VotingGroup sub-module error type.
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub enum VotingGroupError {

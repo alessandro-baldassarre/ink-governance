@@ -63,8 +63,10 @@ pub struct ProposalCore {
     pub canceled: bool,
 }
 
+/// Counting sub-module unique storage key
 pub const COUNTING_KEY: u32 = openbrush::storage_unique_key!(Counting);
 
+/// Empty Struct to support sub-module
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(COUNTING_KEY)]
 pub struct Counting {}
@@ -94,8 +96,10 @@ impl Counter for Counting {
     }
 }
 
+/// Voting sub-module unique storage key
 pub const VOTING_KEY: u32 = openbrush::storage_unique_key!(Voting);
 
+/// Empty Struct to support sub-module
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(VOTING_KEY)]
 pub struct Voting {}
@@ -111,8 +115,10 @@ impl Voter for Voting {
     }
 }
 
+/// Unique storage key
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
 
+/// Governor core module upgradeable storage struct
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Data<C = Counting, V = Voting>
@@ -124,19 +130,22 @@ where
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
 {
+    /// Map every ProposalId to a ProposalCore
     pub proposals: Mapping<ProposalId, ProposalCore>,
-    // This queue keeps track of the governor operating on itself. Calls to functions protected by the
+    /// This queue keeps track of the governor operating on itself.
+    // Calls to functions protected by the
     // {only_governance} modifier needs to be whitelisted in this queue. Whitelisting is set in {_before_execute},
     // consumed by the {only_governance} modifier and eventually reset in {_after_execute}. This ensures that the
     // execution of {only_governance} protected calls can only be achieved through successful proposals.
     pub governance_call: VecDeque<[u8; 4]>,
-    // The module that determine valid voting options.
+    /// The sub-module that determine valid voting options.
     pub counting_module: C,
-    // The module that determine the source of voting power.
+    /// The sub-module that determine the source of voting power.
     pub voting_module: V,
     pub _reserved: Option<()>,
 }
 
+/// Modifier which check that the function is called only through governance  
 #[modifier_definition]
 pub fn only_governance<T, C, V, F, R, E>(instance: &mut T, body: F) -> Result<R, E>
 where
@@ -398,6 +407,7 @@ where
     }
 }
 
+/// Internal methods that perfom the logics of the contract
 pub trait Internal {
     /// User must override those methods in their contract.
     fn _emit_proposal_created(

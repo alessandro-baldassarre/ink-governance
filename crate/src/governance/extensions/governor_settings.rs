@@ -31,13 +31,18 @@ use openbrush::{
     },
 };
 
+/// Unique storage key
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(GovernorSetting);
 
+/// Governor settings extension upgradeable storage struct
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Data {
+    /// The numbers of blocks from the moment of the proposal to when it becomes active for voting
     pub voting_delay: BlockNumber,
+    /// The number of blocks in which a proposal can be voted on
     pub voting_period: BlockNumber,
+    /// The minimum number of votes an account must have to propose and vote
     pub proposal_threshold: u64,
 }
 
@@ -89,6 +94,7 @@ where
     }
 }
 
+/// Internal methods that perfom the logics of the contract
 pub trait Internal {
     fn _emit_voting_delay_set(
         &self,

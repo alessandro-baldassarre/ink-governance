@@ -31,11 +31,15 @@ use openbrush::{
     },
 };
 
+/// Unique storage key
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
 
+/// The number of votes an account had in the past
 pub type OldWeight = Vote;
+/// The number of votes of an account updated after some action
 pub type NewWeight = Vote;
 
+/// PSP22Votes extension upgradeable storage struct
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Data {
@@ -147,6 +151,7 @@ where
     }
 }
 
+/// Internal methods that perfom the logics of the contract
 pub trait Internal {
     /// User must override those methods in their contract.
     /// Emitted when an account changes their delegate.

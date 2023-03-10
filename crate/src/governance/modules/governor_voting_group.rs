@@ -40,12 +40,16 @@ use ink::{
     },
 };
 
+/// Unique storage key
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Voting);
 
+/// Voting storage struct
 #[derive(Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Voting {
+    /// Map each member account id to votes
     pub members: Mapping<AccountId, u64>,
+    /// Admin account id
     pub admin: AccountId,
     pub _reserved: Option<()>,
 }
@@ -71,6 +75,8 @@ impl Voter for Voting {
     }
 }
 
+/// Modifier which check that the function is called only through governance or by the admin of the
+/// group
 #[modifier_definition]
 pub fn only_governance_or_admin<T, C, V, F, R, E>(
     instance: &mut T,
@@ -191,6 +197,8 @@ where
         Ok(())
     }
 }
+
+/// Internal methods that perfom the logics of the contract
 pub trait Internal {
     fn _init_members(&mut self, admin: AccountId, init_members: &[VotingMember]);
 
