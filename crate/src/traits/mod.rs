@@ -1,6 +1,6 @@
-/// errors enums used in ink_governance contracts
+/// Errors enums used in ink_governance contracts
 pub mod errors;
-/// governance modules traits
+/// Governance modules traits
 pub mod governance;
-/// token related traits
+/// Token related traits
 pub mod token;

@@ -2,7 +2,7 @@ use openbrush::traits::String;
 
 use super::GovernorError;
 
-/// The Counting module error type.
+/// Counting module error type.
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub enum CountingError {

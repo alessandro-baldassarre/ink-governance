@@ -5,7 +5,7 @@ use openbrush::{
 
 use super::VotesError;
 
-/// The PSP22Votes module error type.
+/// PSP22Votes module error type.
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub enum PSP22VotesError {

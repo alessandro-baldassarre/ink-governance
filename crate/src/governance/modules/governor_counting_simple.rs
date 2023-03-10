@@ -36,8 +36,10 @@ use ink::storage::traits::{
     StorableHint,
 };
 
+/// Unique storage key
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Counting);
 
+/// Counting storage struct
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Counting {
@@ -150,6 +152,7 @@ where
     }
 }
 
+/// Internal methods that perfom the logics of the contract
 pub trait Internal {
     fn _quorum(&self) -> u64;
 
