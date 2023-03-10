@@ -6,7 +6,6 @@ pub mod gov_psp22_votes {
     use ink_governance::{
         governor::*,
         governor_counting_simple::*,
-        voter::*,
     };
 
     use ink_governance::psp22_votes::*;
@@ -25,7 +24,7 @@ pub mod gov_psp22_votes {
     #[derive(Default, Storage)]
     pub struct Contract {
         #[storage_field]
-        governor: governor::Data<governor_counting_simple::Counting, voter::Voting>,
+        governor: governor::Data<governor_counting_simple::Counting>,
         #[storage_field]
         psp22_votes: psp22_votes::Data,
         #[storage_field]
