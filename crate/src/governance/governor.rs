@@ -4,10 +4,7 @@ pub use crate::{
     traits::governance::*,
 };
 
-use crate::governance::modules::{
-    counter,
-    voter,
-};
+use crate::traits::errors::CountingError;
 
 use ink::{
     env::{
@@ -44,6 +41,11 @@ use openbrush::{
     },
 };
 
+use self::modules::{
+    counter::Counter,
+    voter::Voter,
+};
+
 /// A ProposalCore describe internal parameters for a proposal
 #[derive(scale::Decode, scale::Encode)]
 #[cfg_attr(
@@ -61,11 +63,59 @@ pub struct ProposalCore {
     pub canceled: bool,
 }
 
+pub const COUNTING_KEY: u32 = openbrush::storage_unique_key!(Counting);
+
+#[derive(Default, Debug)]
+#[openbrush::upgradeable_storage(COUNTING_KEY)]
+pub struct Counting {}
+
+impl Counter for Counting {
+    default fn _quorum_reached(
+        &self,
+        _proposal_id: &ProposalId,
+    ) -> Result<bool, CountingError> {
+        Err(CountingError::Custom(String::from("No module")))
+    }
+    default fn _vote_succeeded(
+        &self,
+        _proposal_id: &ProposalId,
+    ) -> Result<bool, CountingError> {
+        Err(CountingError::Custom(String::from("No module")))
+    }
+    default fn _count_vote(
+        &mut self,
+        _proposal_id: &ProposalId,
+        _account: &AccountId,
+        _support: u8,
+        _weight: u64,
+        _params: &[u8],
+    ) -> Result<(), CountingError> {
+        Err(CountingError::Custom(String::from("No module")))
+    }
+}
+
+pub const VOTING_KEY: u32 = openbrush::storage_unique_key!(Voting);
+
+#[derive(Default, Debug)]
+#[openbrush::upgradeable_storage(VOTING_KEY)]
+pub struct Voting {}
+
+impl Voter for Voting {
+    default fn _get_votes(
+        &self,
+        _account: &AccountId,
+        _block_number: BlockNumber,
+        _params: &[u8],
+    ) -> Option<u64> {
+        None
+    }
+}
+
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
 
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
-pub struct Data<C = counter::Counting, V = voter::Voting>
+pub struct Data<C = Counting, V = Voting>
 where
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
@@ -90,11 +140,11 @@ where
 #[modifier_definition]
 pub fn only_governance<T, C, V, F, R, E>(instance: &mut T, body: F) -> Result<R, E>
 where
-    C: counter::Counter,
+    C: Counter,
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
-    V: voter::Voter,
+    V: Voter,
     V: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
@@ -112,11 +162,11 @@ where
 
 impl<T, C, V> Governor for T
 where
-    C: counter::Counter,
+    C: Counter,
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
-    V: voter::Voter,
+    V: Voter,
     V: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,
@@ -480,11 +530,11 @@ pub trait Internal {
 
 impl<T, C, V> Internal for T
 where
-    C: counter::Counter,
+    C: Counter,
     C: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<719029772, ManualKey<{ STORAGE_KEY }>>, Type = C>,
-    V: voter::Voter,
+    V: Voter,
     V: Storable
         + StorableHint<ManualKey<{ STORAGE_KEY }>>
         + AutoStorableHint<ManualKey<3230629697, ManualKey<{ STORAGE_KEY }>>, Type = V>,

@@ -12,11 +12,11 @@ pub use crate::{
     },
 };
 
-use crate::governance::{
-    governor::*,
-    modules::{
-        counter,
-        voter,
+use crate::{
+    governance::governor::*,
+    governor::modules::{
+        counter::Counter,
+        voter::Voter,
     },
 };
 use openbrush::{
@@ -46,7 +46,7 @@ pub struct Counting {
     pub _reserved: Option<()>,
 }
 
-impl counter::Counter for Counting {
+impl Counter for Counting {
     default fn _quorum_reached(
         &self,
         proposal_id: &ProposalId,
@@ -111,14 +111,14 @@ impl counter::Counter for Counting {
 
 impl<T, C, V> CountingSimple for T
 where
-    C: counter::Counter + Internal,
+    C: Counter + Internal,
     C: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
         + AutoStorableHint<
             ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>,
             Type = C,
         >,
-    V: voter::Voter,
+    V: Voter,
     V: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
         + AutoStorableHint<

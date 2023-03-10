@@ -6,15 +6,15 @@ pub use crate::{
     traits::governance::extensions::settings::*,
 };
 
-use crate::governor;
-
-use crate::governance::{
-    governor::*,
+use crate::governor::{
+    self,
     modules::{
-        counter,
-        voter,
+        counter::Counter,
+        voter::Voter,
     },
 };
+
+use crate::governance::governor::*;
 
 use ink::storage::traits::{
     AutoStorableHint,
@@ -43,14 +43,14 @@ pub struct Data {
 
 impl<T, C, V> GovernorSettings for T
 where
-    C: counter::Counter,
+    C: Counter,
     C: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
         + AutoStorableHint<
             ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>,
             Type = C,
         >,
-    V: voter::Voter,
+    V: Voter,
     V: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
         + AutoStorableHint<

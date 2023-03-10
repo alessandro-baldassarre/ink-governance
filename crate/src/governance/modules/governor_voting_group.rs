@@ -9,11 +9,11 @@ pub use crate::{
     },
 };
 
-use crate::governance::{
-    governor::*,
-    modules::{
-        counter,
-        voter,
+use crate::{
+    governance::governor::*,
+    governor::modules::{
+        counter::Counter,
+        voter::Voter,
     },
 };
 
@@ -60,7 +60,7 @@ impl Default for Voting {
     }
 }
 
-impl voter::Voter for Voting {
+impl Voter for Voting {
     default fn _get_votes(
         &self,
         account: &AccountId,
@@ -77,14 +77,14 @@ pub fn only_governance_or_admin<T, C, V, F, R, E>(
     body: F,
 ) -> Result<R, E>
 where
-    C: counter::Counter,
+    C: Counter,
     C: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
         + AutoStorableHint<
             ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>,
             Type = C,
         >,
-    V: voter::Voter + Internal,
+    V: Voter + Internal,
     V: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
         + AutoStorableHint<
@@ -107,14 +107,14 @@ where
 
 impl<T, C, V> VotingGroup for T
 where
-    C: counter::Counter,
+    C: Counter,
     C: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
         + AutoStorableHint<
             ManualKey<719029772, ManualKey<{ governor::STORAGE_KEY }>>,
             Type = C,
         >,
-    V: voter::Voter + Internal,
+    V: Voter + Internal,
     V: Storable
         + StorableHint<ManualKey<{ governor::STORAGE_KEY }>>
         + AutoStorableHint<

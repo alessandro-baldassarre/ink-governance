@@ -4,7 +4,9 @@ pub use governor::*;
 
 /// Traits implementation of modules to use combined with governor.
 pub mod modules {
+    pub mod counter;
     pub mod counting_simple;
+    pub mod voter;
     pub mod voting_group;
 }
 
